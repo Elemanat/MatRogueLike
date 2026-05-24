@@ -1,13 +1,10 @@
 import React from 'react';
+import type { PlayerStats } from '../types/game';
 
 interface Props {
   playerName: string;
   floor: number;
-  stats: {
-    enemiesDefeated: number;
-    correctAnswers: number;
-    wrongAnswers: number;
-  };
+  stats: PlayerStats;
   onReturnToIntro: () => void;
   onMenu: () => void;
 }

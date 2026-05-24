@@ -95,12 +95,17 @@ function App() {
           )}
 
           {state.currentScreen === Screen.SETTINGS && (
-            <SettingsScreen onBack={() => dispatch({ type: 'TO_MENU' })} />
+            <SettingsScreen
+              settings={state.settings}
+              onChange={settings => dispatch({ type: 'UPDATE_SETTINGS', settings })}
+              onResetSessionStats={() => dispatch({ type: 'RESET_SESSION_STATS' })}
+              onBack={() => dispatch({ type: 'TO_MENU' })}
+            />
           )}
 
           {state.currentScreen === Screen.STATISTICS && (
             <StatisticsScreen
-              stats={state.stats}
+              stats={state.sessionStats}
               onBack={() => dispatch({ type: 'TO_MENU' })}
             />
           )}
@@ -115,12 +120,15 @@ function App() {
 
           {state.currentScreen === Screen.COMBAT && state.currentEnemy && state.currentProblem && (
             <CombatScreen
+              key={`${state.currentProblem.id}-${state.currentEnemy.hp}`}
               enemy={state.currentEnemy}
               problem={state.currentProblem}
               playerHp={state.playerHp}
               playerMaxHp={state.playerMaxHp}
               inventory={state.inventory}
               peekNextRoom={state.peekNextRoom}
+              roundTimeSeconds={state.settings.roundTimeSeconds}
+              reducedMotion={state.settings.reducedMotion}
               onAnswer={correct => dispatch({ type: 'ANSWER', correct })}
               onUseItem={id => dispatch({ type: 'USE_ITEM', itemId: id as typeof ItemId[keyof typeof ItemId] })}
               onClosePeek={() => dispatch({ type: 'CLOSE_PEEK' })}
@@ -149,7 +157,7 @@ function App() {
             <GameOverScreen
               playerName={state.playerName}
               floor={state.floor}
-              stats={state.stats}
+              stats={state.runStats}
               onReturnToIntro={() => dispatch({ type: 'RESTART_TO_INTRO' })}
               onMenu={() => dispatch({ type: 'TO_MENU' })}
             />
@@ -159,7 +167,7 @@ function App() {
             <VictoryScreen
               playerName={state.playerName}
               towerName={state.selectedTower.name}
-              stats={state.stats}
+              stats={state.runStats}
               onMenu={() => dispatch({ type: 'TO_MENU' })}
             />
           )}

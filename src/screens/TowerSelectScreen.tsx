@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TOWERS } from '../hooks/useGameState';
+import { TOWERS } from '../services/gameCatalog';
 import type { Tower } from '../types/game';
 
 interface Props {

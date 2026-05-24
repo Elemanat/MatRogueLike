@@ -1,21 +1,10 @@
-import { useReducer } from 'react';
+import { useEffect, useReducer } from 'react';
 import { Screen, RoomType, EnemyType, ItemId } from '../types/game';
-import type { GameState, Item, Tower, Enemy, Problem } from '../types/game';
+import type { GameState, Item, Tower, Enemy, Problem, PlayerStats, GameSettings } from '../types/game';
+import { ALL_ITEMS } from '../services/gameCatalog';
 
 // ── Dummy data ────────────────────────────────────────────────────────────────
 
-export const TOWERS: Tower[] = [
-  { id: 'fractions', name: 'Věž zlomků',    topic: 'Zlomky a desetinná čísla', floors: 3, roomsPerFloor: 3 },
-  { id: 'times',     name: 'Věž násobilky', topic: 'Násobilka a dělení',        floors: 2, roomsPerFloor: 4 },
-];
-
-export const ALL_ITEMS: Item[] = [
-  { id: ItemId.ADD_TIME,    name: '⏱ Přesýpací hodiny', description: '+30 sekund na příklad' },
-  { id: ItemId.CHANGE_PROB, name: '🔄 Záměna',           description: 'Vyměň příklad za jiný' },
-  { id: ItemId.HEAL,        name: '❤️ Lektvar',           description: 'Obnov 1 srdce' },
-  { id: ItemId.SKIP,        name: '💨 Kouřová clona',     description: 'Přeskoč příklad (bez ztráty)' },
-  { id: ItemId.PEEK,        name: '🔭 Dalekohled',        description: 'Nakukni do příští místnosti' },
-];
 
 const PROBLEMS_FRACTIONS: Problem[] = [
   { id: 'f1', question: '1/2 + 1/4 = ?',  correctAnswer: '3/4',  wrongAnswers: ['1/2', '1/6'] },
@@ -39,6 +28,42 @@ const PROBLEMS_TIMES: Problem[] = [
 const ENEMIES_NORMAL = ['Zlý zlomek', 'Záludná rovnice', 'Číselný duch', 'Rozbitá desetina'];
 const ENEMIES_MINIBOSS = ['Miniboss: Velký jmenovatel', 'Miniboss: Mocný součin'];
 const ENEMIES_BOSS = ['BOSS: Arcivládce Čísel', 'BOSS: Nekonečný Zlomek'];
+
+const STORAGE_KEY_SESSION_STATS = 'vezmat.sessionStats.v1';
+const STORAGE_KEY_SETTINGS = 'vezmat.settings.v1';
+const STORAGE_KEY_LAST_PLAYER = 'vezmat.lastPlayer.v1';
+
+const defaultSettings: GameSettings = {
+  roundTimeSeconds: 20,
+  soundEnabled: true,
+  reducedMotion: false,
+};
+
+function isPlayerStats(value: unknown): value is PlayerStats {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return ['enemiesDefeated', 'floorsCompleted', 'correctAnswers', 'wrongAnswers']
+    .every(k => typeof v[k] === 'number');
+}
+
+function isGameSettings(value: unknown): value is GameSettings {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.roundTimeSeconds === 'number'
+    && typeof v.soundEnabled === 'boolean'
+    && typeof v.reducedMotion === 'boolean'
+  );
+}
+
+function readStorageJson<T>(key: string): T | null {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) as T : null;
+  } catch {
+    return null;
+  }
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -87,7 +112,7 @@ function screenForRoom(rt: RoomType): Screen {
 
 // ── Initial state ─────────────────────────────────────────────────────────────
 
-const initialStats = { enemiesDefeated: 0, floorsCompleted: 0, correctAnswers: 0, wrongAnswers: 0 };
+const initialStats: PlayerStats = { enemiesDefeated: 0, floorsCompleted: 0, correctAnswers: 0, wrongAnswers: 0 };
 
 const initialState: GameState = {
   currentScreen:  Screen.LOGIN,
@@ -102,8 +127,30 @@ const initialState: GameState = {
   selectedTower:  null,
   peekNextRoom:   null,
   rewardItem:     null,
-  stats:          { ...initialStats },
+  runStats:       { ...initialStats },
+  sessionStats:   { ...initialStats },
+  settings:       { ...defaultSettings },
 };
+
+function initState(): GameState {
+  if (typeof window === 'undefined') return initialState;
+
+  const storedStats = readStorageJson<unknown>(STORAGE_KEY_SESSION_STATS);
+  const storedSettings = readStorageJson<unknown>(STORAGE_KEY_SETTINGS);
+  const storedPlayer = window.localStorage.getItem(STORAGE_KEY_LAST_PLAYER);
+
+  return {
+    ...initialState,
+    playerName: storedPlayer ?? '',
+    sessionStats: isPlayerStats(storedStats) ? storedStats : { ...initialStats },
+    settings: isGameSettings(storedSettings)
+      ? {
+          ...storedSettings,
+          roundTimeSeconds: Math.max(10, Math.min(60, storedSettings.roundTimeSeconds)),
+        }
+      : { ...defaultSettings },
+  };
+}
 
 // ── Chest items stored outside state (no side-effects in reducer) ─────────────
 // Passed as part of PICK_CHEST actions through payload
@@ -127,7 +174,9 @@ type Action =
   | { type: 'TAKE_REWARD' }
   | { type: 'CLOSE_PEEK' }
   | { type: 'PEEK_SKIP_ROOM' }
-  | { type: 'RESTART_TO_INTRO' };
+  | { type: 'RESTART_TO_INTRO' }
+  | { type: 'UPDATE_SETTINGS'; settings: Partial<GameSettings> }
+  | { type: 'RESET_SESSION_STATS' };
 
 // ── Reducer ───────────────────────────────────────────────────────────────────
 
@@ -181,7 +230,13 @@ function reducer(state: GameState, action: Action): GameState {
       return { ...state, selectedTower: action.tower };
 
     case 'TO_MENU':
-      return { ...initialState, playerName: state.playerName, currentScreen: Screen.MENU };
+      return {
+        ...initialState,
+        playerName: state.playerName,
+        currentScreen: Screen.MENU,
+        sessionStats: state.sessionStats,
+        settings: state.settings,
+      };
 
     case 'TO_TOWER_SELECT':
       return { ...state, currentScreen: Screen.TOWER_SELECT };
@@ -196,7 +251,7 @@ function reducer(state: GameState, action: Action): GameState {
       return { ...state, currentScreen: Screen.STATISTICS };
 
     case 'LOGOUT':
-      return { ...initialState, currentScreen: Screen.LOGIN };
+      return { ...initialState, currentScreen: Screen.LOGIN, settings: state.settings };
 
     case 'START_RUN': {
       const tower = state.selectedTower!;
@@ -217,7 +272,7 @@ function reducer(state: GameState, action: Action): GameState {
         currentProblem: enemy ? randomProblem(tower.id) : null,
         peekNextRoom: null,
         rewardItem: null,
-        stats: { ...initialStats },
+        runStats: { ...initialStats },
       };
     }
 
@@ -229,7 +284,8 @@ function reducer(state: GameState, action: Action): GameState {
       if (action.correct) {
         const enemy = state.currentEnemy!;
         const newEnemyHp = enemy.hp - 1;
-        const newStats = { ...state.stats, correctAnswers: state.stats.correctAnswers + 1 };
+        const runStats = { ...state.runStats, correctAnswers: state.runStats.correctAnswers + 1 };
+        const sessionStats = { ...state.sessionStats, correctAnswers: state.sessionStats.correctAnswers + 1 };
 
         // Boss/Miniboss má více HP — ještě žije
         if (newEnemyHp > 0) {
@@ -237,22 +293,36 @@ function reducer(state: GameState, action: Action): GameState {
             ...state,
             currentEnemy: { ...enemy, hp: newEnemyHp },
             currentProblem: randomProblem(tower.id),
-            stats: newStats,
+            runStats,
+            sessionStats,
           };
         }
 
         // Nepřítel poražen
-        const defeatedStats = {
-          ...newStats,
-          enemiesDefeated: newStats.enemiesDefeated + 1,
+        const runDefeatedStats = {
+          ...runStats,
+          enemiesDefeated: runStats.enemiesDefeated + 1,
           floorsCompleted: enemy.type === EnemyType.MINIBOSS || enemy.type === EnemyType.BOSS
-            ? newStats.floorsCompleted + 1
-            : newStats.floorsCompleted,
+            ? runStats.floorsCompleted + 1
+            : runStats.floorsCompleted,
+        };
+        const sessionDefeatedStats = {
+          ...sessionStats,
+          enemiesDefeated: sessionStats.enemiesDefeated + 1,
+          floorsCompleted: enemy.type === EnemyType.MINIBOSS || enemy.type === EnemyType.BOSS
+            ? sessionStats.floorsCompleted + 1
+            : sessionStats.floorsCompleted,
         };
 
         // Boss poražen → výhra
         if (enemy.type === EnemyType.BOSS) {
-          return { ...state, currentScreen: Screen.VICTORY, currentEnemy: null, stats: defeatedStats };
+          return {
+            ...state,
+            currentScreen: Screen.VICTORY,
+            currentEnemy: null,
+            runStats: runDefeatedStats,
+            sessionStats: sessionDefeatedStats,
+          };
         }
 
         // Miniboss poražen → dialog čaroděje o dokončení patra
@@ -261,7 +331,8 @@ function reducer(state: GameState, action: Action): GameState {
             ...state,
             currentScreen: Screen.FLOOR_COMPLETE,
             currentEnemy: null,
-            stats: defeatedStats,
+              runStats: runDefeatedStats,
+              sessionStats: sessionDefeatedStats,
             rewardItem: null,
           };
         }
@@ -272,22 +343,31 @@ function reducer(state: GameState, action: Action): GameState {
           ...state,
           currentScreen: Screen.REWARD,
           currentEnemy: null,
-          stats: defeatedStats,
+          runStats: runDefeatedStats,
+          sessionStats: sessionDefeatedStats,
           rewardItem: reward,
         };
 
       } else {
         // Špatná odpověď
         const newHp = state.playerHp - 1;
-        const newStats = { ...state.stats, wrongAnswers: state.stats.wrongAnswers + 1 };
+        const runStats = { ...state.runStats, wrongAnswers: state.runStats.wrongAnswers + 1 };
+        const sessionStats = { ...state.sessionStats, wrongAnswers: state.sessionStats.wrongAnswers + 1 };
         if (newHp <= 0) {
-          return { ...state, playerHp: 0, currentScreen: Screen.GAMEOVER, stats: newStats };
+          return {
+            ...state,
+            playerHp: 0,
+            currentScreen: Screen.GAMEOVER,
+            runStats,
+            sessionStats,
+          };
         }
         return {
           ...state,
           playerHp: newHp,
           currentProblem: randomProblem(tower.id),
-          stats: newStats,
+          runStats,
+          sessionStats,
         };
       }
     }
@@ -368,6 +448,24 @@ function reducer(state: GameState, action: Action): GameState {
         playerName: state.playerName,
         selectedTower: state.selectedTower,
         currentScreen: Screen.INTRO,
+        sessionStats: state.sessionStats,
+        settings: state.settings,
+      };
+
+    case 'UPDATE_SETTINGS':
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          ...action.settings,
+          roundTimeSeconds: Math.max(10, Math.min(60, action.settings.roundTimeSeconds ?? state.settings.roundTimeSeconds)),
+        },
+      };
+
+    case 'RESET_SESSION_STATS':
+      return {
+        ...state,
+        sessionStats: { ...initialStats },
       };
 
     default:
@@ -378,7 +476,18 @@ function reducer(state: GameState, action: Action): GameState {
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useGameState() {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, initialState, initState);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY_SESSION_STATS, JSON.stringify(state.sessionStats));
+      window.localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(state.settings));
+      window.localStorage.setItem(STORAGE_KEY_LAST_PLAYER, state.playerName);
+    } catch {
+      // Ignore quota/privacy errors; game should remain playable without persistence.
+    }
+  }, [state.sessionStats, state.settings, state.playerName]);
+
   return { state, dispatch };
 }
 

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 
 const WIZARD_COMMENTS = [
   'Tady nic není… jen ticho a prach.',
@@ -12,7 +12,9 @@ interface Props {
 }
 
 export const EmptyRoomScreen: React.FC<Props> = ({ onContinue }) => {
-  const comment = useRef(WIZARD_COMMENTS[Math.floor(Math.random() * WIZARD_COMMENTS.length)]).current;
+  const [comment] = useState(
+    () => WIZARD_COMMENTS[Math.floor(Math.random() * WIZARD_COMMENTS.length)]
+  );
 
   return (
     <div className="flex flex-col h-full px-4 py-6 gap-6 justify-between">

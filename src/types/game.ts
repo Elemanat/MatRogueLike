@@ -70,6 +70,19 @@ export interface Tower {
   roomsPerFloor: number;
 }
 
+export interface PlayerStats {
+  enemiesDefeated: number;
+  floorsCompleted: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+}
+
+export interface GameSettings {
+  roundTimeSeconds: number;
+  soundEnabled: boolean;
+  reducedMotion: boolean;
+}
+
 export interface GameState {
   currentScreen: Screen;
   playerName: string;
@@ -83,12 +96,9 @@ export interface GameState {
   selectedTower: Tower | null;
   peekNextRoom: RoomType | null;
   rewardItem: Item | null;   // item nabídnutý po souboji
-  stats: {
-    enemiesDefeated: number;
-    floorsCompleted: number;
-    correctAnswers: number;
-    wrongAnswers: number;
-  };
+  runStats: PlayerStats;
+  sessionStats: PlayerStats;
+  settings: GameSettings;
 }
 
 

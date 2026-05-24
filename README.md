@@ -1,75 +1,91 @@
-# React + TypeScript + Vite
+# VezMat (MatRogueLike)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Roguelike math game prototype for grade-6 students.
+Stack: React + TypeScript + Vite + Tailwind (utility classes + custom CSS).
 
-Currently, two official plugins are available:
+## Current Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Login with player name.
+- Tower selection (2 dummy towers).
+- Run loop: room -> combat/chest/empty -> miniboss -> boss.
+- Combat with timer, answer options, items, and enemy HP.
+- Equivalent answer check for fractions (example: `1/2` equals `2/4`).
+- Reward/chest item flow.
+- HUD with minimap + health bar.
+- Separate `runStats` and `sessionStats`.
+- Settings with local persistence (timer length, sound toggle, reduced motion).
 
-## React Compiler
+## Local Run
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```powershell
+npm install
+npm run dev -- --host
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open `http://localhost:5173/`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Environment Configuration
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Copy `.env.example` to `.env` and adjust values when needed.
+
+```powershell
+Copy-Item .env.example .env
 ```
+
+Available variables:
+- `VITE_API_MODE` - `mock` or `real`
+- `VITE_API_BASE_URL` - backend base URL
+- `VITE_API_TIMEOUT_MS` - HTTP timeout in milliseconds
+
+## Quality Checks
+
+```powershell
+npm run lint
+npm run build
+```
+
+## Project Structure (important parts)
+
+- `src/types/game.ts` - core domain types (`GameState`, `PlayerStats`, `GameSettings`, `Problem`, `Item`).
+- `src/hooks/useGameState.ts` - central reducer + game flow + localStorage persistence.
+- `src/services/api/` - API client abstraction (`mock` and `real` adapters).
+- `docs/backend-contract.md` - draft backend contract for run/problem endpoints.
+- `src/components/CombatScreen.tsx` - battle UI, timer UX, answer handling.
+- `src/screens/SettingsScreen.tsx` - user-configurable settings.
+
+## Next Milestones
+
+### 1) Backend + Database integration
+
+- Introduce backend API for:
+  - player profile
+  - generated problems
+  - run history/statistics
+- Recommended first API contract:
+  - `POST /api/runs/start`
+  - `POST /api/runs/{id}/answer`
+  - `POST /api/runs/{id}/finish`
+  - `GET /api/problems/next?topic=fractions&difficulty=2`
+
+### 2) Kubernetes deployment
+
+- Containerize frontend (`Dockerfile`) and serve static build via Nginx.
+- Add manifests/Helm chart for:
+  - `Deployment`
+  - `Service`
+  - `Ingress`
+  - config via `ConfigMap` (API base URL)
+
+### 3) Problem generation pipeline
+
+- Start with deterministic template generator (fractions, decimals, multiplication).
+- Add difficulty tiers per floor.
+- Keep answer canonicalization in one shared utility module.
+
+### 4) Art and backgrounds
+
+- Keep placeholder UI for now.
+- Replace with hand-drawn assets in incremental passes:
+  1. screen backgrounds
+  2. wizard + enemy sprites
+  3. item icons and room markers

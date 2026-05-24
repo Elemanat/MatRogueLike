@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ALL_ITEMS } from '../hooks/useGameState';
+import { ALL_ITEMS } from '../services/gameCatalog';
 import type { Item } from '../types/game';
 
 interface Props {

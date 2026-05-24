@@ -71,6 +71,51 @@ h1, h2, h3 { font-family: 'Caveat', cursive; color: var(--ink); }
 .hp-bar-track { border: 2px solid var(--ink); border-radius: 3px; background: var(--paper); overflow: hidden; }
 .hp-bar-fill  { height: 100%; background: var(--red); transition: width 0.3s; }
 
+.time-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.time-text {
+  color: var(--ink);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.time-hint {
+  color: var(--ink-light);
+  font-size: 0.9rem;
+}
+
+.time-track {
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper-dark);
+  height: 12px;
+  overflow: hidden;
+}
+
+.time-fill {
+  height: 100%;
+  background: var(--green);
+  transition: width 0.2s linear, background-color 0.2s ease;
+}
+
+.time-fill-danger {
+  background: var(--red);
+  animation: pulseDanger 0.7s ease-in-out infinite;
+}
+
+.time-fill-danger-static {
+  background: var(--red);
+}
+
+.time-text-danger {
+  color: var(--red);
+}
+
 .wizard-bubble {
   position: relative;
   border: 2px solid var(--ink);
@@ -101,3 +146,9 @@ h1, h2, h3 { font-family: 'Caveat', cursive; color: var(--ink); }
   to   { transform: translateY(0);     opacity: 1; }
 }
 .toast-slide { animation: slideDown 0.25s ease-out; }
+
+@keyframes pulseDanger {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+

@@ -1,14 +1,10 @@
 import React from 'react';
+import type { PlayerStats } from '../types/game';
 
 interface Props {
   playerName: string;
   towerName: string;
-  stats: {
-    enemiesDefeated: number;
-    floorsCompleted: number;
-    correctAnswers: number;
-    wrongAnswers: number;
-  };
+  stats: PlayerStats;
   onMenu: () => void;
 }
 

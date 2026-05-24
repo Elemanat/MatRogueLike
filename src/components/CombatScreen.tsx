@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import type { Problem, Item, Enemy, RoomType } from '../types/game';
 import { EnemyType, ItemId } from '../types/game';
 import { ItemBar } from './ItemBar';
@@ -12,6 +12,37 @@ const ROOM_TYPE_LABEL: Record<string, string> = {
   BOSS:     '👑 Boss',
 };
 
+function hashString(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+function parseMathAnswer(value: string): number | null {
+  const normalized = value.trim().replace(',', '.');
+
+  const fractionMatch = normalized.match(/^(-?\d+)\s*\/\s*(-?\d+)$/);
+  if (fractionMatch) {
+    const numerator = Number(fractionMatch[1]);
+    const denominator = Number(fractionMatch[2]);
+    if (denominator === 0) return null;
+    return numerator / denominator;
+  }
+
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : null;
+}
+
+function isEquivalentAnswer(selected: string, correct: string): boolean {
+  if (selected.trim() === correct.trim()) return true;
+  const a = parseMathAnswer(selected);
+  const b = parseMathAnswer(correct);
+  if (a === null || b === null) return false;
+  return Math.abs(a - b) < 1e-9;
+}
+
 interface Props {
   enemy: Enemy;
   problem: Problem;
@@ -19,6 +50,8 @@ interface Props {
   playerMaxHp: number;
   inventory: Item[];
   peekNextRoom: RoomType | null;
+  roundTimeSeconds: number;
+  reducedMotion: boolean;
   onAnswer: (correct: boolean) => void;
   onUseItem: (id: Item['id']) => void;
   onClosePeek: () => void;
@@ -28,24 +61,41 @@ interface Props {
 
 export const CombatScreen: React.FC<Props> = ({
   enemy, problem, inventory,
-  peekNextRoom, onAnswer, onUseItem, onClosePeek, onPeekSkip, onAddTimeUsed,
+  peekNextRoom, roundTimeSeconds, reducedMotion, onAnswer, onUseItem, onClosePeek, onPeekSkip, onAddTimeUsed,
 }) => {
   const [showTimeToast, setShowTimeToast] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(roundTimeSeconds);
+  const [timeCap, setTimeCap] = useState(roundTimeSeconds);
 
-  // Zamíchat odpovědi
+  useEffect(() => {
+    if (peekNextRoom) return;
+    if (timeLeft <= 0) {
+      onAnswer(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setTimeLeft(prev => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [timeLeft, onAnswer, peekNextRoom]);
+
+  // Deterministické pseudo-zamíchání, aby byl render čistý bez Math.random()
   const answers = useMemo(() => {
     const all = [problem.correctAnswer, ...problem.wrongAnswers];
-    for (let i = all.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [all[i], all[j]] = [all[j], all[i]];
-    }
-    return all;
-  }, [problem.correctAnswer, problem.wrongAnswers]);
+    return all
+      .map((answer, idx) => ({ answer, idx, rank: hashString(`${problem.id}:${answer}:${idx}`) }))
+      .sort((a, b) => a.rank - b.rank)
+      .map(x => x.answer);
+  }, [problem.id, problem.correctAnswer, problem.wrongAnswers]);
 
   // ADD_TIME: sleduj použití itemu a zobraz toast
   const handleUseItem = useCallback((id: Item['id']) => {
     if (id === ItemId.ADD_TIME) {
       onUseItem(id);
+      setTimeLeft(prev => Math.min(180, prev + 30));
+      setTimeCap(prev => Math.min(180, prev + 30));
       onAddTimeUsed();
       setShowTimeToast(true);
       setTimeout(() => setShowTimeToast(false), 2000);
@@ -59,6 +109,8 @@ export const CombatScreen: React.FC<Props> = ({
     : enemy.type === EnemyType.MINIBOSS
     ? 'var(--red)'
     : 'var(--ink)';
+  const isLowTime = timeLeft <= 5;
+  const timePct = Math.max(0, Math.min(100, (timeLeft / timeCap) * 100));
 
   return (
     <div className="flex flex-col h-full px-3 py-3 gap-3 relative">
@@ -119,7 +171,17 @@ export const CombatScreen: React.FC<Props> = ({
 
       {/* Příklad */}
       <div className="sketch-box px-4 py-3 text-center">
-        <p className="text-base" style={{ color: 'var(--ink-light)' }}>Vypočítej:</p>
+        <div className="time-row">
+          <span className={`time-text ${isLowTime ? 'time-text-danger' : ''}`}>⏳ {timeLeft}s</span>
+          <span className="time-hint">na odpověď</span>
+        </div>
+        <div className="time-track" aria-hidden="true">
+          <div
+            className={`time-fill ${isLowTime ? (reducedMotion ? 'time-fill-danger-static' : 'time-fill-danger') : ''}`}
+            style={{ width: `${timePct}%` }}
+          />
+        </div>
+        <p className="text-base mt-2" style={{ color: 'var(--ink-light)' }}>Vypočítej:</p>
         <p className="text-3xl font-bold" style={{ color: 'var(--ink)', fontFamily: 'Caveat, cursive' }}>
           {problem.question}
         </p>
@@ -131,7 +193,7 @@ export const CombatScreen: React.FC<Props> = ({
           <button
             key={ans}
             className="sketch-btn text-xl py-2 w-full"
-            onClick={() => onAnswer(ans === problem.correctAnswer)}
+            onClick={() => onAnswer(isEquivalentAnswer(ans, problem.correctAnswer))}
           >
             {ans}
           </button>
