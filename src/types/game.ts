@@ -60,6 +60,7 @@ export interface Problem {
   question: string;
   correctAnswer: string;
   wrongAnswers: string[];
+  allCorrectAnswers?: string[]; // All equivalent correct answers (e.g., "1/2", "0.5")
 }
 
 export interface Tower {
@@ -85,6 +86,7 @@ export interface GameSettings {
 
 export interface GameState {
   currentScreen: Screen;
+  runId: string | null;
   playerName: string;
   playerHp: number;
   playerMaxHp: number;
@@ -99,6 +101,8 @@ export interface GameState {
   runStats: PlayerStats;
   sessionStats: PlayerStats;
   settings: GameSettings;
+  // Dialog for showing wrong answer feedback
+  wrongAnswerDialog: { question: string; yourAnswer: string; correctAnswer: string } | null;
 }
 
 

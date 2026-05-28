@@ -5,6 +5,7 @@ import { HUD } from './components/HUD';
 import { CombatScreen } from './components/CombatScreen';
 import { EmptyRoomScreen } from './components/EmptyRoomScreen';
 import { ChestScreen } from './components/ChestScreen';
+import { WrongAnswerDialog } from './components/WrongAnswerDialog';
 import { LoginScreen } from './screens/LoginScreen';
 import { MenuScreen } from './screens/MenuScreen';
 import { TowerSelectScreen } from './screens/TowerSelectScreen';
@@ -23,7 +24,7 @@ const GAME_SCREENS = new Set<Screen>([
 ]);
 
 function App() {
-  const { state, dispatch } = useGameState();
+  const { state, dispatch, actions } = useGameState();
   const showHUD = GAME_SCREENS.has(state.currentScreen);
 
   const handleAddTimeUsed = useCallback(() => {
@@ -90,7 +91,7 @@ function App() {
           {state.currentScreen === Screen.INTRO && state.selectedTower && (
             <IntroScreen
               tower={state.selectedTower}
-              onContinue={() => dispatch({ type: 'START_RUN' })}
+              onContinue={() => actions.startRun()}
             />
           )}
 
@@ -118,24 +119,25 @@ function App() {
             <ChestScreen onPick={item => dispatch({ type: 'PICK_CHEST_ITEM', item })} />
           )}
 
-          {state.currentScreen === Screen.COMBAT && state.currentEnemy && state.currentProblem && (
-            <CombatScreen
-              key={`${state.currentProblem.id}-${state.currentEnemy.hp}`}
-              enemy={state.currentEnemy}
-              problem={state.currentProblem}
-              playerHp={state.playerHp}
-              playerMaxHp={state.playerMaxHp}
-              inventory={state.inventory}
-              peekNextRoom={state.peekNextRoom}
-              roundTimeSeconds={state.settings.roundTimeSeconds}
-              reducedMotion={state.settings.reducedMotion}
-              onAnswer={correct => dispatch({ type: 'ANSWER', correct })}
-              onUseItem={id => dispatch({ type: 'USE_ITEM', itemId: id as typeof ItemId[keyof typeof ItemId] })}
-              onClosePeek={() => dispatch({ type: 'CLOSE_PEEK' })}
-              onPeekSkip={() => dispatch({ type: 'PEEK_SKIP_ROOM' })}
-              onAddTimeUsed={handleAddTimeUsed}
-            />
-          )}
+           {state.currentScreen === Screen.COMBAT && state.currentEnemy && state.currentProblem && (
+             <CombatScreen
+               key={`${state.currentProblem.id}-${state.currentEnemy.hp}`}
+               enemy={state.currentEnemy}
+               problem={state.currentProblem}
+               playerHp={state.playerHp}
+               playerMaxHp={state.playerMaxHp}
+               inventory={state.inventory}
+               peekNextRoom={state.peekNextRoom}
+               roundTimeSeconds={state.settings.roundTimeSeconds}
+               reducedMotion={state.settings.reducedMotion}
+               showWrongAnswerDialog={!!state.wrongAnswerDialog}
+               onAnswer={(ans, correct) => { actions.answer(ans ?? '', correct); }}
+               onUseItem={id => dispatch({ type: 'USE_ITEM', itemId: id as typeof ItemId[keyof typeof ItemId] })}
+               onClosePeek={() => dispatch({ type: 'CLOSE_PEEK' })}
+               onPeekSkip={() => dispatch({ type: 'PEEK_SKIP_ROOM' })}
+               onAddTimeUsed={handleAddTimeUsed}
+             />
+           )}
 
           {state.currentScreen === Screen.REWARD && state.rewardItem && (
             <RewardScreen
@@ -172,8 +174,18 @@ function App() {
             />
           )}
         </div>
-      </div>
-    </div>
+       </div>
+
+       {/* Wrong Answer Dialog Overlay */}
+       {state.wrongAnswerDialog && (
+         <WrongAnswerDialog
+           question={state.wrongAnswerDialog.question}
+           yourAnswer={state.wrongAnswerDialog.yourAnswer}
+           correctAnswer={state.wrongAnswerDialog.correctAnswer}
+           onContinue={() => dispatch({ type: 'CLOSE_WRONG_ANSWER_DIALOG' })}
+         />
+       )}
+     </div>
   );
 }
 

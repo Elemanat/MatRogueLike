@@ -52,7 +52,8 @@ interface Props {
   peekNextRoom: RoomType | null;
   roundTimeSeconds: number;
   reducedMotion: boolean;
-  onAnswer: (correct: boolean) => void;
+  showWrongAnswerDialog?: boolean; // Pass this to freeze timer when dialog is showing
+  onAnswer: (answer: string, correct: boolean) => void;
   onUseItem: (id: Item['id']) => void;
   onClosePeek: () => void;
   onPeekSkip: () => void;
@@ -61,16 +62,20 @@ interface Props {
 
 export const CombatScreen: React.FC<Props> = ({
   enemy, problem, inventory,
-  peekNextRoom, roundTimeSeconds, reducedMotion, onAnswer, onUseItem, onClosePeek, onPeekSkip, onAddTimeUsed,
+  peekNextRoom, roundTimeSeconds, reducedMotion, showWrongAnswerDialog, onAnswer, onUseItem, onClosePeek, onPeekSkip, onAddTimeUsed,
 }) => {
+  const [hasAnswered, setHasAnswered] = useState(false);
   const [showTimeToast, setShowTimeToast] = useState(false);
   const [timeLeft, setTimeLeft] = useState(roundTimeSeconds);
   const [timeCap, setTimeCap] = useState(roundTimeSeconds);
 
   useEffect(() => {
     if (peekNextRoom) return;
+    if (hasAnswered) return;
+    if (showWrongAnswerDialog) return; // Freeze timer when dialog is showing
     if (timeLeft <= 0) {
-      onAnswer(false);
+      setHasAnswered(true);
+      onAnswer('', false);
       return;
     }
 
@@ -79,7 +84,7 @@ export const CombatScreen: React.FC<Props> = ({
     }, 1000);
 
     return () => window.clearTimeout(timer);
-  }, [timeLeft, onAnswer, peekNextRoom]);
+  }, [hasAnswered, timeLeft, onAnswer, peekNextRoom, showWrongAnswerDialog]);
 
   // Deterministické pseudo-zamíchání, aby byl render čistý bez Math.random()
   const answers = useMemo(() => {
@@ -111,6 +116,17 @@ export const CombatScreen: React.FC<Props> = ({
     : 'var(--ink)';
   const isLowTime = timeLeft <= 5;
   const timePct = Math.max(0, Math.min(100, (timeLeft / timeCap) * 100));
+
+  const handleAnswer = useCallback((selectedAnswer: string) => {
+    if (hasAnswered) return;
+    setHasAnswered(true);
+
+    // Check against all correct answers if available, not just the first one
+    const correctAnswers = problem.allCorrectAnswers ?? [problem.correctAnswer];
+    const isCorrect = correctAnswers.some(correct => isEquivalentAnswer(selectedAnswer, correct));
+
+    onAnswer(selectedAnswer, isCorrect);
+  }, [hasAnswered, onAnswer, problem.correctAnswer, problem.allCorrectAnswers]);
 
   return (
     <div className="flex flex-col h-full px-3 py-3 gap-3 relative">
@@ -193,7 +209,8 @@ export const CombatScreen: React.FC<Props> = ({
           <button
             key={ans}
             className="sketch-btn text-xl py-2 w-full"
-            onClick={() => onAnswer(isEquivalentAnswer(ans, problem.correctAnswer))}
+            onClick={() => handleAnswer(ans)}
+            disabled={hasAnswered}
           >
             {ans}
           </button>
@@ -208,7 +225,4 @@ export const CombatScreen: React.FC<Props> = ({
     </div>
   );
 };
-
-
-
 

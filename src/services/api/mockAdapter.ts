@@ -1,6 +1,5 @@
 import type { ApiClient } from './client';
 import type {
-  ApiProblemDto,
   NextProblemRequest,
   NextProblemResponse,
   RunAnswerRequest,
@@ -8,42 +7,86 @@ import type {
   RunStartRequest,
   RunStartResponse,
 } from './contracts';
+import { generateProblem, isEquivalentAnswer } from './problemGenerator';
 
-const MOCK_PROBLEMS: ApiProblemDto[] = [
-  { id: 'm1', prompt: '1/2 + 1/4 = ?', correctAnswers: ['3/4'], wrongAnswers: ['1/2', '1/6'], topic: 'fractions', difficulty: 1 },
-  { id: 'm2', prompt: '3/4 - 1/4 = ?', correctAnswers: ['1/2', '2/4'], wrongAnswers: ['1/4', '1/6'], topic: 'fractions', difficulty: 1 },
-  { id: 'm3', prompt: '8 x 9 = ?', correctAnswers: ['72'], wrongAnswers: ['63', '81'], topic: 'times', difficulty: 2 },
-];
+const problemRegistry = new Map<string, ReturnType<typeof generateProblem>>();
+const runContextMap = new Map<string, { towerId: string }>();
 
-function pickProblem(topic: string): ApiProblemDto {
-  const scoped = MOCK_PROBLEMS.filter(p => p.topic === topic);
-  const base = scoped.length > 0 ? scoped : MOCK_PROBLEMS;
-  return base[Math.floor(Math.random() * base.length)];
+function remember(problem: ReturnType<typeof generateProblem>): ReturnType<typeof generateProblem> {
+  problemRegistry.set(problem.id, problem);
+  return problem;
+}
+
+function generateAndRemember(request: { towerId: string; floor: number; enemyType: string; seed?: string }) {
+  return remember(generateProblem(request));
+}
+
+function nextProblemFrom(problemId: string, fallbackTowerId: string): ReturnType<typeof generateProblem> {
+  const current = problemRegistry.get(problemId);
+  // Use the cached towerId or fall back to the provided one
+  const towerId = current?.topic ?? fallbackTowerId;
+  
+  // Log if we're falling back (useful for debugging)
+  if (!current) {
+    console.warn(`[MockAdapter] Problem ${problemId} not found in registry, using fallback towerId: ${towerId}`);
+  }
+  
+  return generateAndRemember({
+    towerId,
+    floor: current?.difficulty ?? 1,
+    enemyType: 'NORMAL',
+    seed: `${problemId}:next`,
+  });
 }
 
 export function createMockApiClient(): ApiClient {
   return {
     runs: {
       async startRun(request: RunStartRequest): Promise<RunStartResponse> {
+        const initialProblem = generateAndRemember({
+          towerId: request.towerId,
+          floor: 1,
+          enemyType: 'NORMAL',
+          seed: `${request.playerName}-${Date.now()}`,
+        });
+        
+        const runId = `mock-${request.towerId}-${Date.now()}`;
+        // Store the run context so we can look it up later
+        runContextMap.set(runId, { towerId: request.towerId });
+
         return {
-          runId: `mock-${request.towerId}-${Date.now()}`,
+          runId,
           startedAt: new Date().toISOString(),
-          initialProblem: pickProblem(request.towerId),
+          initialProblem,
         };
       },
       async answer(request: RunAnswerRequest): Promise<RunAnswerResponse> {
-        const problem = MOCK_PROBLEMS.find(p => p.id === request.problemId);
-        const isCorrect = Boolean(problem?.correctAnswers.includes(request.answer));
+        const problem = problemRegistry.get(request.problemId);
+        const isCorrect = Boolean(problem && problem.correctAnswers.some(correct => isEquivalentAnswer(request.answer, correct)));
+        
+        // Get the towerId from run context if available, otherwise use problem topic
+        const runContext = runContextMap.get(request.runId);
+        const fallbackTowerId = runContext?.towerId ?? problem?.topic ?? 'fractions';
+        
+        const nextProblem = remember(nextProblemFrom(request.problemId, fallbackTowerId));
+
         return {
           isCorrect,
           state: 'CONTINUE',
-          nextProblem: pickProblem(problem?.topic ?? 'fractions'),
+          nextProblem,
         };
       },
     },
     problems: {
       async getNext(request: NextProblemRequest): Promise<NextProblemResponse> {
-        return { problem: pickProblem(request.towerId) };
+        return {
+          problem: generateAndRemember({
+            towerId: request.towerId,
+            floor: request.floor,
+            enemyType: request.enemyType,
+            seed: `${request.towerId}:${request.floor}:${request.enemyType}`,
+          }),
+        };
       },
     },
   };

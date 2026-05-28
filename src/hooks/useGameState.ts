@@ -1,29 +1,12 @@
-import { useEffect, useReducer } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 import { Screen, RoomType, EnemyType, ItemId } from '../types/game';
 import type { GameState, Item, Tower, Enemy, Problem, PlayerStats, GameSettings } from '../types/game';
 import { ALL_ITEMS } from '../services/gameCatalog';
+import { apiClient } from '../services/api';
+import { mapProblemDtoToProblem } from '../services/api/mappers';
+import { generateProblem } from '../services/api/problemGenerator';
+import type { RunAnswerResponse } from '../services/api/contracts';
 
-// ── Dummy data ────────────────────────────────────────────────────────────────
-
-
-const PROBLEMS_FRACTIONS: Problem[] = [
-  { id: 'f1', question: '1/2 + 1/4 = ?',  correctAnswer: '3/4',  wrongAnswers: ['1/2', '1/6'] },
-  { id: 'f2', question: '3/4 − 1/4 = ?',  correctAnswer: '1/2',  wrongAnswers: ['1/4', '1/6'] },
-  { id: 'f3', question: '0.5 + 0.3 = ?',  correctAnswer: '0.8',  wrongAnswers: ['0.53', '1.0'] },
-  { id: 'f4', question: '1.5 × 2 = ?',    correctAnswer: '3.0',  wrongAnswers: ['2.5', '3.5'] },
-  { id: 'f5', question: '2/3 + 1/3 = ?',  correctAnswer: '1',    wrongAnswers: ['2/3', '4/3'] },
-  { id: 'f6', question: '5/6 − 1/3 = ?',  correctAnswer: '1/2',  wrongAnswers: ['2/3', '1/6'] },
-  { id: 'f7', question: '0.75 − 0.25 = ?', correctAnswer: '0.5', wrongAnswers: ['0.25', '1.0'] },
-  { id: 'f8', question: '3/8 + 1/8 = ?',  correctAnswer: '1/2',  wrongAnswers: ['4/16', '3/4'] },
-];
-
-const PROBLEMS_TIMES: Problem[] = [
-  { id: 't1', question: '6 × 7 = ?',   correctAnswer: '42', wrongAnswers: ['36', '49'] },
-  { id: 't2', question: '8 × 9 = ?',   correctAnswer: '72', wrongAnswers: ['63', '81'] },
-  { id: 't3', question: '56 ÷ 7 = ?',  correctAnswer: '8',  wrongAnswers: ['6', '9'] },
-  { id: 't4', question: '9 × 4 = ?',   correctAnswer: '36', wrongAnswers: ['32', '40'] },
-  { id: 't5', question: '63 ÷ 9 = ?',  correctAnswer: '7',  wrongAnswers: ['6', '8'] },
-];
 
 const ENEMIES_NORMAL = ['Zlý zlomek', 'Záludná rovnice', 'Číselný duch', 'Rozbitá desetina'];
 const ENEMIES_MINIBOSS = ['Miniboss: Velký jmenovatel', 'Miniboss: Mocný součin'];
@@ -71,12 +54,17 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function getProblems(towerId: string): Problem[] {
-  return towerId === 'fractions' ? PROBLEMS_FRACTIONS : PROBLEMS_TIMES;
+function resolveRewardItem(rewardItemId?: string): Item {
+  return ALL_ITEMS.find(item => item.id === rewardItemId) ?? pick(ALL_ITEMS);
 }
 
-function randomProblem(towerId: string): Problem {
-  return pick(getProblems(towerId));
+/**
+ * Generates a problem locally (fallback for when API is unavailable).
+ * Used to bootstrap initial problem or as fallback when API fails.
+ */
+function generateLocalProblem(towerId: string, floor: number, enemyType: string): Problem {
+  const dto = generateProblem({ towerId, floor, enemyType, seed: `local-${Math.random()}` });
+  return mapProblemDtoToProblem(dto);
 }
 
 function makeEnemy(type: EnemyType): Enemy {
@@ -116,6 +104,7 @@ const initialStats: PlayerStats = { enemiesDefeated: 0, floorsCompleted: 0, corr
 
 const initialState: GameState = {
   currentScreen:  Screen.LOGIN,
+  runId:          null,
   playerName:     '',
   playerHp:       3,
   playerMaxHp:    3,
@@ -130,6 +119,7 @@ const initialState: GameState = {
   runStats:       { ...initialStats },
   sessionStats:   { ...initialStats },
   settings:       { ...defaultSettings },
+  wrongAnswerDialog: null,
 };
 
 function initState(): GameState {
@@ -166,9 +156,9 @@ type Action =
   | { type: 'TO_SETTINGS' }
   | { type: 'TO_STATISTICS' }
   | { type: 'LOGOUT' }
-  | { type: 'START_RUN' }
+  | { type: 'START_RUN'; runId?: string; initialProblem?: Problem | null }
   | { type: 'CONTINUE' }
-  | { type: 'ANSWER';            correct: boolean }
+  | { type: 'ANSWER';            correct: boolean; answer?: string; result?: ResolvedRunAnswerResponse }
   | { type: 'USE_ITEM';          itemId: ItemId }
   | { type: 'PICK_CHEST_ITEM';   item: Item }
   | { type: 'TAKE_REWARD' }
@@ -176,7 +166,12 @@ type Action =
   | { type: 'PEEK_SKIP_ROOM' }
   | { type: 'RESTART_TO_INTRO' }
   | { type: 'UPDATE_SETTINGS'; settings: Partial<GameSettings> }
-  | { type: 'RESET_SESSION_STATS' };
+  | { type: 'RESET_SESSION_STATS' }
+  | { type: 'CLOSE_WRONG_ANSWER_DIALOG' };
+
+type ResolvedRunAnswerResponse = Omit<RunAnswerResponse, 'nextProblem'> & {
+  nextProblem?: Problem | null;
+};
 
 // ── Reducer ───────────────────────────────────────────────────────────────────
 
@@ -187,37 +182,37 @@ function advanceRoom(state: GameState): GameState {
   // Přechod do dalšího patra
   if (nextRoom > tower.roomsPerFloor) {
     const nextFloor = state.floor + 1;
-    const rt = generateRoomType(1, tower.roomsPerFloor, nextFloor, tower.floors);
-    const screen = screenForRoom(rt);
-    const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
-      ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
-      : null;
-    return {
-      ...state,
-      floor: nextFloor,
-      room: 1,
-      currentScreen: screen,
-      currentEnemy: enemy,
-      currentProblem: enemy ? randomProblem(tower.id) : null,
-      peekNextRoom: null,
-      rewardItem: null,
-    };
+     const rt = generateRoomType(1, tower.roomsPerFloor, nextFloor, tower.floors);
+     const screen = screenForRoom(rt);
+     const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
+       ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
+       : null;
+     return {
+       ...state,
+       floor: nextFloor,
+       room: 1,
+       currentScreen: screen,
+       currentEnemy: enemy,
+       currentProblem: enemy ? generateLocalProblem(tower.id, nextFloor, enemy.type === EnemyType.BOSS ? 'BOSS' : enemy.type === EnemyType.MINIBOSS ? 'MINIBOSS' : 'NORMAL') : null,
+       peekNextRoom: null,
+       rewardItem: null,
+     };
   }
 
-  const rt = generateRoomType(nextRoom, tower.roomsPerFloor, state.floor, tower.floors);
-  const screen = screenForRoom(rt);
-  const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
-    ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
-    : null;
-  return {
-    ...state,
-    room: nextRoom,
-    currentScreen: screen,
-    currentEnemy: enemy,
-    currentProblem: enemy ? randomProblem(tower.id) : null,
-    peekNextRoom: null,
-    rewardItem: null,
-  };
+   const rt = generateRoomType(nextRoom, tower.roomsPerFloor, state.floor, tower.floors);
+   const screen = screenForRoom(rt);
+   const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
+     ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
+     : null;
+   return {
+     ...state,
+     room: nextRoom,
+     currentScreen: screen,
+     currentEnemy: enemy,
+     currentProblem: enemy ? generateLocalProblem(tower.id, state.floor, enemy.type === EnemyType.BOSS ? 'BOSS' : enemy.type === EnemyType.MINIBOSS ? 'MINIBOSS' : 'NORMAL') : null,
+     peekNextRoom: null,
+     rewardItem: null,
+   };
 }
 
 function reducer(state: GameState, action: Action): GameState {
@@ -253,124 +248,139 @@ function reducer(state: GameState, action: Action): GameState {
     case 'LOGOUT':
       return { ...initialState, currentScreen: Screen.LOGIN, settings: state.settings };
 
-    case 'START_RUN': {
-      const tower = state.selectedTower!;
-      const rt = generateRoomType(1, tower.roomsPerFloor, 1, tower.floors);
-      const screen = screenForRoom(rt);
-      const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
-        ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
-        : null;
-      return {
-        ...state,
-        currentScreen: screen,
-        playerHp: 3,
-        playerMaxHp: 3,
-        floor: 1,
-        room: 1,
-        inventory: [],
-        currentEnemy: enemy,
-        currentProblem: enemy ? randomProblem(tower.id) : null,
-        peekNextRoom: null,
-        rewardItem: null,
-        runStats: { ...initialStats },
-      };
-    }
+     case 'START_RUN': {
+       const tower = state.selectedTower!;
+       const rt = generateRoomType(1, tower.roomsPerFloor, 1, tower.floors);
+       const screen = screenForRoom(rt);
+       const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
+         ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
+         : null;
+       return {
+         ...state,
+         currentScreen: screen,
+         playerHp: 3,
+         playerMaxHp: 3,
+         floor: 1,
+         room: 1,
+         inventory: [],
+         currentEnemy: enemy,
+         currentProblem: enemy ? (action.initialProblem ?? generateLocalProblem(tower.id, 1, enemy.type === EnemyType.BOSS ? 'BOSS' : enemy.type === EnemyType.MINIBOSS ? 'MINIBOSS' : 'NORMAL')) : null,
+         peekNextRoom: null,
+         rewardItem: null,
+         runStats: { ...initialStats },
+         runId: action.runId ?? null,
+       };
+     }
 
     case 'CONTINUE':
       return advanceRoom(state);
 
-    case 'ANSWER': {
-      const tower = state.selectedTower!;
-      if (action.correct) {
-        const enemy = state.currentEnemy!;
-        const newEnemyHp = enemy.hp - 1;
-        const runStats = { ...state.runStats, correctAnswers: state.runStats.correctAnswers + 1 };
-        const sessionStats = { ...state.sessionStats, correctAnswers: state.sessionStats.correctAnswers + 1 };
+     case 'ANSWER': {
+       const tower = state.selectedTower;
+       if (!tower || !state.currentEnemy) return state;
 
-        // Boss/Miniboss má více HP — ještě žije
-        if (newEnemyHp > 0) {
-          return {
-            ...state,
-            currentEnemy: { ...enemy, hp: newEnemyHp },
-            currentProblem: randomProblem(tower.id),
-            runStats,
-            sessionStats,
-          };
-        }
+       const apiState = action.result?.state;
+       const nextProblem = action.result?.nextProblem ?? (tower ? generateLocalProblem(tower.id, state.floor, state.currentEnemy.type === EnemyType.BOSS ? 'BOSS' : state.currentEnemy.type === EnemyType.MINIBOSS ? 'MINIBOSS' : 'NORMAL') : null);
 
-        // Nepřítel poražen
-        const runDefeatedStats = {
-          ...runStats,
-          enemiesDefeated: runStats.enemiesDefeated + 1,
-          floorsCompleted: enemy.type === EnemyType.MINIBOSS || enemy.type === EnemyType.BOSS
-            ? runStats.floorsCompleted + 1
-            : runStats.floorsCompleted,
-        };
-        const sessionDefeatedStats = {
-          ...sessionStats,
-          enemiesDefeated: sessionStats.enemiesDefeated + 1,
-          floorsCompleted: enemy.type === EnemyType.MINIBOSS || enemy.type === EnemyType.BOSS
-            ? sessionStats.floorsCompleted + 1
-            : sessionStats.floorsCompleted,
-        };
+       if (action.correct) {
+         const enemy = state.currentEnemy;
+         const newEnemyHp = enemy.hp - 1;
+         const runStats = { ...state.runStats, correctAnswers: state.runStats.correctAnswers + 1 };
+         const sessionStats = { ...state.sessionStats, correctAnswers: state.sessionStats.correctAnswers + 1 };
 
-        // Boss poražen → výhra
-        if (enemy.type === EnemyType.BOSS) {
-          return {
-            ...state,
-            currentScreen: Screen.VICTORY,
-            currentEnemy: null,
-            runStats: runDefeatedStats,
-            sessionStats: sessionDefeatedStats,
-          };
-        }
+         if (newEnemyHp > 0 && apiState !== 'ENEMY_DEFEATED' && apiState !== 'FLOOR_COMPLETE' && apiState !== 'GAME_OVER' && apiState !== 'VICTORY') {
+           return {
+             ...state,
+             currentEnemy: { ...enemy, hp: newEnemyHp },
+             currentProblem: nextProblem,
+             runStats,
+             sessionStats,
+           };
+         }
 
-        // Miniboss poražen → dialog čaroděje o dokončení patra
-        if (enemy.type === EnemyType.MINIBOSS) {
-          return {
-            ...state,
-            currentScreen: Screen.FLOOR_COMPLETE,
-            currentEnemy: null,
-              runStats: runDefeatedStats,
-              sessionStats: sessionDefeatedStats,
-            rewardItem: null,
-          };
-        }
+         const runDefeatedStats = {
+           ...runStats,
+           enemiesDefeated: runStats.enemiesDefeated + 1,
+           floorsCompleted: enemy.type === EnemyType.MINIBOSS || enemy.type === EnemyType.BOSS
+             ? runStats.floorsCompleted + 1
+             : runStats.floorsCompleted,
+         };
+         const sessionDefeatedStats = {
+           ...sessionStats,
+           enemiesDefeated: sessionStats.enemiesDefeated + 1,
+           floorsCompleted: enemy.type === EnemyType.MINIBOSS || enemy.type === EnemyType.BOSS
+             ? sessionStats.floorsCompleted + 1
+             : sessionStats.floorsCompleted,
+         };
 
-        // Normální nepřítel poražen → nabídni odměnu (random item)
-        const reward = pick(ALL_ITEMS);
-        return {
-          ...state,
-          currentScreen: Screen.REWARD,
-          currentEnemy: null,
-          runStats: runDefeatedStats,
-          sessionStats: sessionDefeatedStats,
-          rewardItem: reward,
-        };
+         if (apiState === 'VICTORY' || enemy.type === EnemyType.BOSS) {
+           return {
+             ...state,
+             currentScreen: Screen.VICTORY,
+             currentEnemy: null,
+             currentProblem: null,
+             runStats: runDefeatedStats,
+             sessionStats: sessionDefeatedStats,
+           };
+         }
 
-      } else {
-        // Špatná odpověď
-        const newHp = state.playerHp - 1;
-        const runStats = { ...state.runStats, wrongAnswers: state.runStats.wrongAnswers + 1 };
-        const sessionStats = { ...state.sessionStats, wrongAnswers: state.sessionStats.wrongAnswers + 1 };
-        if (newHp <= 0) {
-          return {
-            ...state,
-            playerHp: 0,
-            currentScreen: Screen.GAMEOVER,
-            runStats,
-            sessionStats,
-          };
-        }
-        return {
-          ...state,
-          playerHp: newHp,
-          currentProblem: randomProblem(tower.id),
-          runStats,
-          sessionStats,
-        };
-      }
-    }
+         if (apiState === 'FLOOR_COMPLETE' || enemy.type === EnemyType.MINIBOSS) {
+           return {
+             ...state,
+             currentScreen: Screen.FLOOR_COMPLETE,
+             currentEnemy: null,
+             currentProblem: null,
+             runStats: runDefeatedStats,
+             sessionStats: sessionDefeatedStats,
+             rewardItem: null,
+           };
+         }
+
+         const reward = resolveRewardItem(action.result?.rewardItemId);
+         return {
+           ...state,
+           currentScreen: Screen.REWARD,
+           currentEnemy: null,
+           currentProblem: null,
+           runStats: runDefeatedStats,
+           sessionStats: sessionDefeatedStats,
+           rewardItem: reward,
+         };
+       }
+
+       const newHp = state.playerHp - 1;
+       const runStats = { ...state.runStats, wrongAnswers: state.runStats.wrongAnswers + 1 };
+       const sessionStats = { ...state.sessionStats, wrongAnswers: state.sessionStats.wrongAnswers + 1 };
+
+       if (newHp <= 0 || apiState === 'GAME_OVER') {
+         return {
+           ...state,
+           playerHp: 0,
+           currentScreen: Screen.GAMEOVER,
+           currentEnemy: null,
+           currentProblem: null,
+           runStats,
+           sessionStats,
+         };
+       }
+
+       return {
+         ...state,
+         playerHp: newHp,
+         currentProblem: nextProblem,
+         runStats,
+         sessionStats,
+         // Show dialog with wrong answer feedback
+         wrongAnswerDialog: {
+           question: state.currentProblem?.question || 'Příklad',
+           yourAnswer: action.answer || '?',
+           correctAnswer: state.currentProblem?.correctAnswer || '?',
+         },
+       };
+     }
+
+     case 'CLOSE_WRONG_ANSWER_DIALOG':
+       return { ...state, wrongAnswerDialog: null };
 
     case 'TAKE_REWARD': {
       const withReward = state.rewardItem
@@ -398,12 +408,12 @@ function reducer(state: GameState, action: Action): GameState {
             playerHp: Math.min(state.playerMaxHp, state.playerHp + 1),
             inventory: withoutOne(ItemId.HEAL),
           };
-        case ItemId.CHANGE_PROB:
-          return {
-            ...state,
-            currentProblem: randomProblem(tower.id),
-            inventory: withoutOne(ItemId.CHANGE_PROB),
-          };
+         case ItemId.CHANGE_PROB:
+           return {
+             ...state,
+             currentProblem: state.currentEnemy ? generateLocalProblem(tower.id, state.floor, state.currentEnemy.type === EnemyType.BOSS ? 'BOSS' : state.currentEnemy.type === EnemyType.MINIBOSS ? 'MINIBOSS' : 'NORMAL') : null,
+             inventory: withoutOne(ItemId.CHANGE_PROB),
+           };
         case ItemId.SKIP: {
           // Nelze přeskočit bosse ani minibosse
           const e = state.currentEnemy;
@@ -478,6 +488,56 @@ function reducer(state: GameState, action: Action): GameState {
 export function useGameState() {
   const [state, dispatch] = useReducer(reducer, initialState, initState);
 
+  const startRun = useCallback(async () => {
+    const tower = state.selectedTower;
+    if (!tower) return;
+
+    try {
+      const response = await apiClient.runs.startRun({
+        playerName: state.playerName,
+        towerId: tower.id,
+      });
+
+      dispatch({
+        type: 'START_RUN',
+        runId: response.runId,
+        initialProblem: response.initialProblem ? mapProblemDtoToProblem(response.initialProblem) : null,
+      });
+    } catch {
+      dispatch({ type: 'START_RUN' });
+    }
+  }, [state.playerName, state.selectedTower]);
+
+  const answer = useCallback(async (answerText: string, correct: boolean) => {
+    const runId = state.runId;
+    const problemId = state.currentProblem?.id;
+
+    if (!runId || !problemId) {
+      dispatch({ type: 'ANSWER', answer: answerText, correct });
+      return;
+    }
+
+    try {
+      const response = await apiClient.runs.answer({
+        runId,
+        problemId,
+        answer: answerText,
+      });
+
+      dispatch({
+        type: 'ANSWER',
+        answer: answerText,
+        correct: response.isCorrect,
+        result: {
+          ...response,
+          nextProblem: response.nextProblem ? mapProblemDtoToProblem(response.nextProblem) : undefined,
+        },
+      });
+    } catch {
+      dispatch({ type: 'ANSWER', answer: answerText, correct });
+    }
+  }, [state.currentProblem?.id, state.runId]);
+
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY_SESSION_STATS, JSON.stringify(state.sessionStats));
@@ -488,8 +548,10 @@ export function useGameState() {
     }
   }, [state.sessionStats, state.settings, state.playerName]);
 
-  return { state, dispatch };
+  return { state, dispatch, actions: { startRun, answer } };
 }
+
+
 
 
 

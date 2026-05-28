@@ -7,6 +7,9 @@ export function mapProblemDtoToProblem(dto: ApiProblemDto): Problem {
     question: dto.prompt,
     correctAnswer: dto.correctAnswers[0] ?? '',
     wrongAnswers: dto.wrongAnswers,
+    allCorrectAnswers: dto.correctAnswers,
   };
 }
+
+
 
