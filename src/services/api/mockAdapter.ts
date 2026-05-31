@@ -6,6 +6,7 @@ import type {
   RunAnswerResponse,
   RunStartRequest,
   RunStartResponse,
+  PlayerStatsResponse,
 } from './contracts';
 import { generateProblem, isEquivalentAnswer } from './problemGenerator';
 
@@ -89,6 +90,23 @@ export function createMockApiClient(): ApiClient {
         };
       },
     },
+    players: {
+      async getStats(playerName: string): Promise<PlayerStatsResponse> {
+        // Mock data pro testování bez backendu
+        return {
+          playerName,
+          overall: {
+            totalRuns: 5,
+            totalAnswers: 50,
+            correctAnswers: 40,
+            accuracyPercentage: 80
+          },
+          byTopic: {
+            'fractions': { total: 30, correct: 25 },
+            'decimals': { total: 20, correct: 15 }
+          }
+        };
+      }
+    }
   };
 }
-

@@ -24,9 +24,9 @@ export const TowerSelectScreen: React.FC<Props> = ({ onSelect, onBack }) => {
             className="sketch-box text-left px-4 py-3 cursor-pointer transition-all"
             style={{
               borderColor: selected?.id === tower.id ? 'var(--gold)' : 'var(--ink)',
-              boxShadow: selected?.id === tower.id ? '3px 3px 0 var(--gold)' : '3px 3px 0 var(--ink)',
+              boxShadow: selected?.id === tower.id ? '0.2rem 0.2rem 0 var(--gold)' : '0.2rem 0.2rem 0 var(--ink)',
               backgroundColor: selected?.id === tower.id ? '#fffbe6' : 'var(--paper)',
-              border: '2px solid',
+              border: '0.125rem solid',
             }}
             onClick={() => setSelected(tower)}
           >

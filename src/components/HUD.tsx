@@ -14,13 +14,13 @@ interface Props {
 export const HUD: React.FC<Props> = ({ tower, floor, room, playerHp, playerMaxHp }) => (
   <div
     style={{
-      borderBottom: '2px solid var(--ink)',
+      borderBottom: '0.125rem solid var(--ink)',
       background: 'var(--paper-dark)',
-      padding: '6px 10px',
+      padding: '0.4rem 0.6rem',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      gap: 8,
+      gap: '0.5rem',
     }}
   >
     {/* Vlevo: název věže + patro/místnost */}

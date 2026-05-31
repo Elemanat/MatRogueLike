@@ -6,6 +6,7 @@ import type {
   RunAnswerResponse,
   RunStartRequest,
   RunStartResponse,
+  PlayerStatsResponse,
 } from './contracts';
 import type { ApiRuntimeConfig } from './config';
 
@@ -70,6 +71,12 @@ export function createRealApiClient(config: ApiRuntimeConfig): ApiClient {
         });
       },
     },
+    players: {
+      async getStats(playerName: string): Promise<PlayerStatsResponse> {
+        return fetchJson<PlayerStatsResponse>(baseUrl, config.timeoutMs, `/api/players/${encodeURIComponent(playerName)}/stats`, {
+          method: 'GET',
+        });
+      },
+    },
   };
 }
-

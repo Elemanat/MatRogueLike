@@ -36,7 +36,7 @@ export const FloorCompleteScreen: React.FC<Props> = ({ tower, floor, onContinue 
       <div className="flex flex-col items-center gap-6 flex-1 justify-center">
         <div
           className="sketch-box flex items-center justify-center text-6xl"
-          style={{ width: 90, height: 90, borderRadius: '50%' }}
+          style={{ width: '5.5rem', height: '5.5rem', borderRadius: '50%' }}
         >
           🧙
         </div>

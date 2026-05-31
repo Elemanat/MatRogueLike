@@ -29,7 +29,7 @@ export const ChestScreen: React.FC<Props> = ({ onPick }) => {
           <button
             key={item.id}
             className="sketch-box text-left px-5 py-4 cursor-pointer hover:opacity-90 transition-opacity"
-            style={{ border: '2px solid var(--ink)' }}
+            style={{ border: '0.125rem solid var(--ink)' }}
             onClick={() => onPick(item)}
           >
             <div className="text-2xl font-bold">{item.name}</div>

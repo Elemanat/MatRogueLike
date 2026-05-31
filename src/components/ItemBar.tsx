@@ -17,7 +17,7 @@ const ITEM_EMOJI: Record<string, string> = {
 };
 
 export const ItemBar: React.FC<Props> = ({ inventory, onUse, disabled }) => (
-  <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+  <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', flexWrap: 'wrap' }}>
     {inventory.map((item, idx) => (
       <button
         key={`${item.id}-${idx}`}
@@ -26,7 +26,7 @@ export const ItemBar: React.FC<Props> = ({ inventory, onUse, disabled }) => (
         disabled={disabled}
         onClick={() => onUse(item.id)}
         style={{
-          width: 44, height: 44, fontSize: '1.4rem',
+          width: '2.75rem', height: '2.75rem', fontSize: '1.4rem',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,

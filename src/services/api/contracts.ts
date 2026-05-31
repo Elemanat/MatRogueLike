@@ -43,3 +43,13 @@ export interface NextProblemResponse {
   problem: ApiProblemDto;
 }
 
+export interface PlayerStatsResponse {
+  playerName: string;
+  overall: {
+    totalRuns: number;
+    totalAnswers: number;
+    correctAnswers: number;
+    accuracyPercentage: number;
+  };
+  byTopic: Record<string, { total: number; correct: number }>;
+}

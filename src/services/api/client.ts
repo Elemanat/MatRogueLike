@@ -5,6 +5,7 @@ import type {
   RunAnswerResponse,
   RunStartRequest,
   RunStartResponse,
+  PlayerStatsResponse,
 } from './contracts';
 
 export interface RunsApi {
@@ -17,7 +18,14 @@ export interface ProblemsApi {
 }
 
 export interface ApiClient {
-  runs: RunsApi;
-  problems: ProblemsApi;
+  runs: {
+    startRun(request: RunStartRequest): Promise<RunStartResponse>;
+    answer(request: RunAnswerRequest): Promise<RunAnswerResponse>;
+  };
+  problems: {
+    getNext(request: NextProblemRequest): Promise<NextProblemResponse>;
+  };
+  players: {
+    getStats(playerName: string): Promise<PlayerStatsResponse>;
+  };
 }
-

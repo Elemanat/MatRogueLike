@@ -167,7 +167,9 @@ type Action =
   | { type: 'RESTART_TO_INTRO' }
   | { type: 'UPDATE_SETTINGS'; settings: Partial<GameSettings> }
   | { type: 'RESET_SESSION_STATS' }
-  | { type: 'CLOSE_WRONG_ANSWER_DIALOG' };
+  | { type: 'CLOSE_WRONG_ANSWER_DIALOG' }
+  | { type: 'CAMP_REST' }
+  | { type: 'CAMP_SCAVENGE' };
 
 type ResolvedRunAnswerResponse = Omit<RunAnswerResponse, 'nextProblem'> & {
   nextProblem?: Problem | null;
@@ -382,6 +384,21 @@ function reducer(state: GameState, action: Action): GameState {
      case 'CLOSE_WRONG_ANSWER_DIALOG':
        return { ...state, wrongAnswerDialog: null };
 
+    case 'CAMP_REST':
+      return advanceRoom({
+        ...state,
+        playerHp: Math.min(state.playerMaxHp, state.playerHp + 1),
+      });
+
+    case 'CAMP_SCAVENGE': {
+      // 50% Ĺˇance na nalezenĂ nĂˇhodnĂ©ho pĹ™edmÄ›tu
+      const foundItem = Math.random() < 0.5 ? resolveRewardItem() : null;
+      if (foundItem) {
+        return advanceRoom({ ...state, inventory: [...state.inventory, foundItem] });
+      }
+      return advanceRoom(state);
+    }
+
     case 'TAKE_REWARD': {
       const withReward = state.rewardItem
         ? { ...state, inventory: [...state.inventory, state.rewardItem], rewardItem: null }
@@ -550,7 +567,6 @@ export function useGameState() {
 
   return { state, dispatch, actions: { startRun, answer } };
 }
-
 
 
 

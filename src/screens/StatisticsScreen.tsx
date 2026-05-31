@@ -1,37 +1,94 @@
-import React from 'react';
-import type { PlayerStats } from '../types/game';
+import React, { useEffect, useState } from 'react';
+import { apiClient } from '../services/api';
+import type { PlayerStatsResponse } from '../services/api/contracts';
 
 interface Props {
-  stats: PlayerStats;
+  playerName: string;
   onBack: () => void;
 }
 
-export const StatisticsScreen: React.FC<Props> = ({ stats, onBack }) => {
-  const total = stats.correctAnswers + stats.wrongAnswers;
-  const accuracy = total > 0 ? Math.round((stats.correctAnswers / total) * 100) : 0;
+export const StatisticsScreen: React.FC<Props> = ({ playerName, onBack }) => {
+  const [stats, setStats] = useState<PlayerStatsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    apiClient.players.getStats(playerName)
+      .then(res => {
+        if (mounted) {
+          setStats(res);
+          setLoading(false);
+        }
+      })
+      .catch(err => {
+        if (mounted) {
+          console.error('Failed to load stats:', err);
+          setError('Nepodařilo se načíst statistiky.');
+          setLoading(false);
+        }
+      });
+
+    return () => { mounted = false; };
+  }, [playerName]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-full items-center justify-center">
+        <p className="text-xl">Načítám statistiky...</p>
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="flex flex-col h-full px-4 py-6 gap-4">
+        <h2 className="text-3xl font-bold text-center" style={{ color: 'var(--ink)' }}>Statistiky</h2>
+        <p className="text-center text-red-600">{error}</p>
+        <button className="sketch-btn mt-auto py-2 w-full" onClick={onBack}>← Zpátky</button>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full px-4 py-6 gap-4">
-      <h2 className="text-3xl font-bold text-center" style={{ color: 'var(--ink)' }}>Statistiky</h2>
-      <p className="text-center text-sm" style={{ color: 'var(--ink-light)' }}>Aktuální session</p>
+    <div className="flex flex-col h-full px-4 py-6 gap-4 overflow-y-auto">
+      <h2 className="text-3xl font-bold text-center" style={{ color: 'var(--ink)' }}>Záznamy hrdiny</h2>
+      <p className="text-center text-xl font-bold mb-4">{stats.playerName}</p>
 
-      <div className="flex flex-col gap-3 flex-1">
+      <div className="flex flex-col gap-3">
+        <h3 className="text-xl font-bold underline mb-2">Celkové skóre</h3>
         {[
-          { label: '⚔️ Poražení nepřátelé', value: stats.enemiesDefeated },
-          { label: '🏰 Dokončená patra',    value: stats.floorsCompleted },
-          { label: '✅ Správné odpovědi',   value: stats.correctAnswers },
-          { label: '❌ Špatné odpovědi',    value: stats.wrongAnswers },
-          { label: '🎯 Úspěšnost',          value: `${accuracy} %` },
+          { label: '🏃 Počet pokusů (Runs)', value: stats.overall.totalRuns },
+          { label: '📝 Vyřešeno příkladů',    value: stats.overall.totalAnswers },
+          { label: '✅ Správné odpovědi',   value: stats.overall.correctAnswers },
+          { label: '🎯 Celková úspěšnost',  value: `${stats.overall.accuracyPercentage} %` },
         ].map(row => (
-          <div key={row.label} className="sketch-box-light px-4 py-2 flex justify-between items-center">
+          <div key={row.label} className="sketch-box-light px-4 py-2 flex justify-between items-center bg-white/50 rounded shadow">
             <span className="text-lg">{row.label}</span>
             <span className="text-2xl font-bold" style={{ color: 'var(--ink)' }}>{row.value}</span>
           </div>
         ))}
       </div>
 
-      <button className="sketch-btn text-xl py-2 w-full" onClick={onBack}>← Zpět do menu</button>
+      {Object.keys(stats.byTopic).length > 0 && (
+        <div className="flex flex-col gap-3 mt-6">
+          <h3 className="text-xl font-bold underline mb-2">Úspěšnost roztříděná dle věží</h3>
+          {Object.entries(stats.byTopic).map(([topic, data]) => {
+            const acc = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+            return (
+              <div key={topic} className="sketch-box-light px-4 py-2 flex justify-between items-center bg-white/50 rounded shadow">
+                <span className="text-lg font-mono">{topic}</span>
+                <span className={`text-xl font-bold ${acc >= 80 ? 'text-green-600' : acc < 50 ? 'text-red-500' : 'text-orange-500'}`}>
+                  {acc} % <span className="text-sm font-normal text-gray-500">({data.correct}/{data.total})</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <button className="sketch-btn text-xl py-2 mt-6 w-full" onClick={onBack}>← Zpět do menu</button>
     </div>
   );
 };
-

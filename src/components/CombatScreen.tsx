@@ -136,9 +136,9 @@ export const CombatScreen: React.FC<Props> = ({
         <div
           className="toast-slide"
           style={{
-            position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+            position: 'absolute', top: '0.5rem', left: '50%', transform: 'translateX(-50%)',
             background: 'var(--ink)', color: 'var(--paper)',
-            padding: '6px 18px', borderRadius: 6, zIndex: 20,
+            padding: '0.4rem 1.1rem', borderRadius: '0.4rem', zIndex: 20,
             fontFamily: 'Caveat, cursive', fontSize: '1.2rem', fontWeight: 600,
             whiteSpace: 'nowrap',
           }}
@@ -171,7 +171,7 @@ export const CombatScreen: React.FC<Props> = ({
           <HealthBar health={enemy.hp} maxHealth={enemy.maxHp} />
         </div>
         {enemy.maxHp > 1 && (
-          <div className="hp-bar-track" style={{ height: 10 }}>
+          <div className="hp-bar-track" style={{ height: '0.6rem' }}>
             <div className="hp-bar-fill" style={{ width: `${(enemy.hp / enemy.maxHp) * 100}%` }} />
           </div>
         )}
@@ -180,7 +180,7 @@ export const CombatScreen: React.FC<Props> = ({
       {/* Placeholder pro ilustraci nepřítele */}
       <div
         className="sketch-box-light flex items-center justify-center"
-        style={{ flex: 1, minHeight: 80, fontSize: '3rem' }}
+        style={{ flex: 1, minHeight: '5rem', fontSize: '3rem' }}
       >
         {enemy.type === EnemyType.BOSS ? '👑' : enemy.type === EnemyType.MINIBOSS ? '💀' : '👾'}
       </div>

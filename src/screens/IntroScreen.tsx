@@ -36,7 +36,7 @@ export const IntroScreen: React.FC<Props> = ({ tower, onContinue }) => {
         {/* Placeholder postava */}
         <div
           className="sketch-box flex items-center justify-center text-6xl"
-          style={{ width: 90, height: 90, borderRadius: '50%' }}
+          style={{ width: '5.5rem', height: '5.5rem', borderRadius: '50%' }}
         >
           🧙
         </div>
@@ -54,9 +54,9 @@ export const IntroScreen: React.FC<Props> = ({ tower, onContinue }) => {
             <span
               key={i}
               style={{
-                width: 8, height: 8, borderRadius: '50%', display: 'inline-block',
+                width: '0.5rem', height: '0.5rem', borderRadius: '50%', display: 'inline-block',
                 background: i === lineIdx ? 'var(--ink)' : 'var(--grid)',
-                border: '1px solid var(--ink)',
+                border: '0.065rem solid var(--ink)',
               }}
             />
           ))}

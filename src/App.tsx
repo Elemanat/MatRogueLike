@@ -106,13 +106,16 @@ function App() {
 
           {state.currentScreen === Screen.STATISTICS && (
             <StatisticsScreen
-              stats={state.sessionStats}
+              playerName={state.playerName!}
               onBack={() => dispatch({ type: 'TO_MENU' })}
             />
           )}
 
           {state.currentScreen === Screen.EMPTY_ROOM && (
-            <EmptyRoomScreen onContinue={() => dispatch({ type: 'CONTINUE' })} />
+            <EmptyRoomScreen 
+              onRest={() => dispatch({ type: 'CAMP_REST' })} 
+              onScavenge={() => dispatch({ type: 'CAMP_SCAVENGE' })} 
+            />
           )}
 
           {state.currentScreen === Screen.CHEST && (
