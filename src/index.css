@@ -13,7 +13,7 @@
   --gold: #d4a017;
   font-family: 'Caveat', cursive;
   line-height: 1.5;
-  /* Responsivní font-size — škáluje všechny rem/em jednotky podle viewportu */
+  /* Responsivní font-size — škáluje se podle viewportu */
   font-size: clamp(14px, 1.5vw, 22px);
 }
 
@@ -27,41 +27,19 @@ body {
   overflow: hidden;
 }
 
-/* ── Hlavní 16:9 kontejner ─────────────────────────────────────────────────── */
-.game-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  width: 100vw;
-  background: var(--paper-dark);
-  overflow: hidden;
-}
-
-.game-container {
-  aspect-ratio: 16 / 9;
-  width: min(100vw, calc(100vh * 16 / 9));
-  height: min(100vh, calc(100vw * 9 / 16));
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0.4rem 0.4rem 0 var(--ink);
-  border: 0.15rem solid var(--ink);
-  border-radius: 0.25rem 0.5rem 0.375rem 0.3rem / 0.375rem 0.25rem 0.5rem 0.3rem;
-}
-
-/* Škálování obrázků v kontejneru — budoucí obrázky se automaticky přizpůsobí */
-.game-container img {
+/* Globální responzivita obrázků */
+img {
   max-width: 100%;
   height: auto;
 }
 
+/* ── Herní pozadí a kreslené boxy ────────────────────────────────────────── */
+
 .graph-paper {
   background-color: var(--paper);
   background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+          linear-gradient(var(--grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   background-size: var(--grid-size) var(--grid-size);
 }
 
@@ -79,6 +57,8 @@ body {
   background-color: var(--paper);
 }
 
+/* ── Tlačítka ────────────────────────────────────────────────────────────── */
+
 .sketch-btn {
   font-family: 'Caveat', cursive;
   font-size: 1.1rem;
@@ -93,8 +73,8 @@ body {
   transition: transform 0.08s, box-shadow 0.08s;
   user-select: none;
 }
-.sketch-btn:hover  { transform: translate(-0.065rem,-0.065rem); box-shadow: 0.25rem 0.25rem 0 var(--ink); }
-.sketch-btn:active { transform: translate(0.125rem,0.125rem);   box-shadow: 0.065rem 0.065rem 0 var(--ink); }
+.sketch-btn:hover  { transform: translate(-0.065rem, -0.065rem); box-shadow: 0.25rem 0.25rem 0 var(--ink); }
+.sketch-btn:active { transform: translate(0.125rem, 0.125rem);   box-shadow: 0.065rem 0.065rem 0 var(--ink); }
 
 .sketch-btn-primary { background-color: var(--ink); color: var(--paper); }
 
@@ -103,53 +83,22 @@ body {
 
 h1, h2, h3 { font-family: 'Caveat', cursive; color: var(--ink); }
 
+/* ── HUD a časomíra ──────────────────────────────────────────────────────── */
+
 .hp-bar-track { border: 0.125rem solid var(--ink); border-radius: 0.2rem; background: var(--paper); overflow: hidden; }
 .hp-bar-fill  { height: 100%; background: var(--red); transition: width 0.3s; }
 
-.time-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 6px;
-}
+.time-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.time-text { color: var(--ink); font-size: 1.1rem; font-weight: 700; }
+.time-hint { color: var(--ink-light); font-size: 0.9rem; }
+.time-track { border: 2px solid var(--ink); border-radius: 999px; background: var(--paper-dark); height: 12px; overflow: hidden; }
+.time-fill { height: 100%; background: var(--green); transition: width 0.2s linear, background-color 0.2s ease; }
 
-.time-text {
-  color: var(--ink);
-  font-size: 1.1rem;
-  font-weight: 700;
-}
+.time-fill-danger { background: var(--red); animation: pulseDanger 0.7s ease-in-out infinite; }
+.time-fill-danger-static { background: var(--red); }
+.time-text-danger { color: var(--red); }
 
-.time-hint {
-  color: var(--ink-light);
-  font-size: 0.9rem;
-}
-
-.time-track {
-  border: 2px solid var(--ink);
-  border-radius: 999px;
-  background: var(--paper-dark);
-  height: 12px;
-  overflow: hidden;
-}
-
-.time-fill {
-  height: 100%;
-  background: var(--green);
-  transition: width 0.2s linear, background-color 0.2s ease;
-}
-
-.time-fill-danger {
-  background: var(--red);
-  animation: pulseDanger 0.7s ease-in-out infinite;
-}
-
-.time-fill-danger-static {
-  background: var(--red);
-}
-
-.time-text-danger {
-  color: var(--red);
-}
+/* ── Speciální tvary ─────────────────────────────────────────────────────── */
 
 .wizard-bubble {
   position: relative;
@@ -176,6 +125,8 @@ h1, h2, h3 { font-family: 'Caveat', cursive; color: var(--ink); }
   border-top: 0.75rem solid var(--paper);
 }
 
+/* ── Animace ─────────────────────────────────────────────────────────────── */
+
 @keyframes slideDown {
   from { transform: translateY(-1.25rem); opacity: 0; }
   to   { transform: translateY(0);        opacity: 1; }
@@ -186,4 +137,3 @@ h1, h2, h3 { font-family: 'Caveat', cursive; color: var(--ink); }
   0%, 100% { opacity: 1; }
   50% { opacity: 0.65; }
 }
-
