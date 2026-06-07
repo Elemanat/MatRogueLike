@@ -192,5 +192,27 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
+app.get('/api/problems/next', (req, res) => {
+    try {
+        const towerId = req.query.towerId as string;
+        const floor = parseInt(req.query.floor as string) || 1;
+        const enemyType = (req.query.enemyType as string) || 'NORMAL';
+
+        const problem = generateProblem({
+            towerId,
+            floor,
+            enemyType,
+            // Přidáme time-based seed, aby se příklady neopakovaly
+            seed: `${towerId}:${floor}:${enemyType}:${Date.now()}`
+        });
+
+        res.json({ problem });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+app.listen( process.env.PORT || 3001, () => {
+    console.log(`🚀 Kuchyně VěžMatu je otevřená! Server naslouchá na http://localhost:${PORT}`);
 });
