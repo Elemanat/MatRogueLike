@@ -18,9 +18,12 @@ async function fetchJson<T>(
 ): Promise<T> {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+    const fullUrl = `${baseUrl}${path}`;
+
+    console.log('[fetchJson] Calling:', fullUrl, init.method);
 
     try {
-        const response = await fetch(`${baseUrl}${path}`, {
+        const response = await fetch(fullUrl, {
             ...init,
             headers: {
                 'Content-Type': 'application/json',
@@ -34,7 +37,9 @@ async function fetchJson<T>(
             throw new Error(`API ${response.status}: ${body}`);
         }
 
-        return await response.json() as T;
+        const data = await response.json() as T;
+        console.log('[fetchJson] Got response:', data);
+        return data;
     } finally {
         window.clearTimeout(timeout);
     }

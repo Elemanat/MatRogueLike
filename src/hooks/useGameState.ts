@@ -83,10 +83,10 @@ function generateRoomType(room: number, roomsPerFloor: number, floor: number, fl
     const isLastRoom = room === roomsPerFloor;
     if (isLastFloor && isLastRoom) return RoomType.BOSS;
     if (isLastRoom) return RoomType.MINIBOSS;
-    // 50 % boj, 25 % truhla, 25 % prázdná
+    // 75 % boj, 15 % truhla, 10 % prázdná (tábořák)
     const r = Math.random();
-    if (r < 0.5) return RoomType.COMBAT;
-    if (r < 0.75) return RoomType.CHEST;
+    if (r < 0.75) return RoomType.COMBAT;
+    if (r < 0.9) return RoomType.CHEST;
     return RoomType.EMPTY;
 }
 
@@ -159,7 +159,7 @@ type Action =
     | { type: 'PICK_CHEST_ITEM'; item: Item }
     | { type: 'TAKE_REWARD' }
     | { type: 'CLOSE_PEEK' }
-    | { type: 'PEEK_SKIP_ROOM' }
+    | { type: 'PEEK_REROLL' }
     | { type: 'RESTART_TO_INTRO' }
     | { type: 'UPDATE_SETTINGS'; settings: Partial<GameSettings> }
     | { type: 'RESET_SESSION_STATS' }
@@ -322,28 +322,26 @@ function reducer(state: GameState, action: Action): GameState {
                     };
                 }
 
+                // ✅ Item se dává JENOM po minibossovi
                 if (apiState === 'FLOOR_COMPLETE' || enemy.type === EnemyType.MINIBOSS) {
+                    const reward = resolveRewardItem(action.result?.rewardItemId);
                     return {
                         ...state,
-                        currentScreen: Screen.FLOOR_COMPLETE,
+                        currentScreen: Screen.REWARD,
                         currentEnemy: null,
                         currentProblem: null,
                         runStats: runDefeatedStats,
                         sessionStats: sessionDefeatedStats,
-                        rewardItem: null,
+                        rewardItem: reward,
                     };
                 }
 
-                const reward = resolveRewardItem(action.result?.rewardItemId);
-                return {
+                // Normální enemy - bez rewárdu, přejdi na další screen
+                return advanceRoom({
                     ...state,
-                    currentScreen: Screen.REWARD,
-                    currentEnemy: null,
-                    currentProblem: null,
                     runStats: runDefeatedStats,
                     sessionStats: sessionDefeatedStats,
-                    rewardItem: reward,
-                };
+                });
             }
 
             const newHp = state.playerHp - 1;
@@ -440,6 +438,16 @@ function reducer(state: GameState, action: Action): GameState {
                     const nextRoomNum = state.room + 1 > tower.roomsPerFloor ? 1 : state.room + 1;
                     const nextFloor = state.room + 1 > tower.roomsPerFloor ? state.floor + 1 : state.floor;
                     const peeked = generateRoomType(nextRoomNum, tower.roomsPerFloor, nextFloor, tower.floors);
+
+                    // ✅ Miniboss a Boss se nemohou měnit (nesmí se rerollovat)
+                    if (peeked === RoomType.MINIBOSS || peeked === RoomType.BOSS) {
+                        return {
+                            ...state,
+                            peekNextRoom: peeked,
+                            inventory: withoutOne(ItemId.PEEK),
+                        };
+                    }
+
                     return {
                         ...state,
                         peekNextRoom: peeked,
@@ -460,12 +468,22 @@ function reducer(state: GameState, action: Action): GameState {
         case 'CLOSE_PEEK':
             return {...state, peekNextRoom: null};
 
-        case 'PEEK_SKIP_ROOM': {
-            const e = state.currentEnemy;
-            if (e && (e.type === EnemyType.BOSS || e.type === EnemyType.MINIBOSS)) {
-                return {...state, peekNextRoom: null};
+        case 'PEEK_REROLL': {
+            if (!state.peekNextRoom) return state;
+            // Nesmí se rerollovat MINIBOSS a BOSS
+            if (state.peekNextRoom === RoomType.MINIBOSS || state.peekNextRoom === RoomType.BOSS) {
+                return state;
             }
-            return advanceRoom({...state, peekNextRoom: null});
+
+            const tower = state.selectedTower!;
+            const nextRoomNum = state.room + 1 > tower.roomsPerFloor ? 1 : state.room + 1;
+            const nextFloor = state.room + 1 > tower.roomsPerFloor ? state.floor + 1 : state.floor;
+            const newPeek = generateRoomType(nextRoomNum, tower.roomsPerFloor, nextFloor, tower.floors);
+
+            return {
+                ...state,
+                peekNextRoom: newPeek,
+            };
         }
 
         case 'RESTART_TO_INTRO':
@@ -509,17 +527,20 @@ export function useGameState() {
         if (!tower) return;
 
         try {
+            console.log('[gameState.startRun] Starting API call...');
             const response = await apiClient.runs.startRun({
                 playerName: state.playerName,
                 towerId: tower.id,
             });
 
+            console.log('[gameState.startRun] Got response:', response);
             dispatch({
                 type: 'START_RUN',
                 runId: response.runId,
                 initialProblem: response.initialProblem ? mapProblemDtoToProblem(response.initialProblem) : null,
             });
-        } catch {
+        } catch (error) {
+            console.error('[gameState.startRun] Error:', error);
             dispatch({type: 'START_RUN'});
         }
     }, [state.playerName, state.selectedTower]);
@@ -538,6 +559,7 @@ export function useGameState() {
                 runId,
                 problemId,
                 answer: answerText,
+                correctAnswers: state.currentProblem?.correctAnswers,
             });
 
             dispatch({

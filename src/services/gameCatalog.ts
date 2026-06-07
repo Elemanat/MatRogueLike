@@ -6,18 +6,18 @@ export const TOWERS: Tower[] = [
         id: 'divisibility-primes',
         name: 'Dělitelnost a prvočísla',
         topic: 'Hledání dělitelů a poznání prvočísel',
-        floors: 3,
-        roomsPerFloor: 3
+        floors: 5,
+        roomsPerFloor: 5
     },
-    {id: 'fractions', name: 'Věž zlomků', topic: 'Zlomky, sčítání a odčítání', floors: 3, roomsPerFloor: 3},
-    {id: 'decimals', name: 'Desetinná čísla', topic: 'Počítání s posunem řádů', floors: 3, roomsPerFloor: 3},
-    {id: 'unit-conversions', name: 'Převody jednotek', topic: 'Délka, čas a hmotnost', floors: 3, roomsPerFloor: 3},
+    {id: 'fractions', name: 'Věž zlomků', topic: 'Zlomky, sčítání a odčítání', floors: 5, roomsPerFloor: 5},
+    {id: 'decimals', name: 'Desetinná čísla', topic: 'Počítání s posunem řádů', floors: 5, roomsPerFloor: 5},
+    {id: 'unit-conversions', name: 'Převody jednotek', topic: 'Délka, čas a hmotnost', floors: 5, roomsPerFloor: 5},
     {
         id: 'angles-degrees',
         name: 'Úhly a stupně',
         topic: 'Rovinná geometrie a trojúhelníky',
-        floors: 3,
-        roomsPerFloor: 4
+        floors: 5,
+        roomsPerFloor: 5
     },
 ];
 

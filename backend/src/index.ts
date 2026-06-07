@@ -8,7 +8,15 @@ import type {RunStartRequest, RunAnswerRequest, RunAnswerState} from './contract
 dotenv.config();
 
 const app = express();
-const prisma = new PrismaClient();
+
+// Debug info
+console.log(`[Backend] Node environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`[Backend] Database URL: ${process.env.DATABASE_URL}`);
+console.log(`[Backend] Port: ${process.env.PORT || 3001}`);
+
+const prisma = new PrismaClient({
+    log: ['error', 'warn'],
+});
 
 app.use(cors());
 app.use(express.json());
@@ -16,6 +24,7 @@ app.use(express.json());
 app.post('/api/runs/start', async (req, res) => {
     try {
         const {playerName, towerId} = req.body as RunStartRequest;
+        console.log(`[Backend] POST /api/runs/start`, {playerName, towerId});
 
         let player = await prisma.player.findUnique({where: {name: playerName}});
         if (!player) {
@@ -59,20 +68,37 @@ app.post('/api/runs/start', async (req, res) => {
 
 app.post('/api/runs/answer', async (req, res) => {
     try {
-        const {runId, problemId, answer, timeSpentMs} = req.body as RunAnswerRequest;
+        const {runId, problemId, answer, timeSpentMs, correctAnswers} = req.body as RunAnswerRequest;
+
+        console.log(`\n========================================`);
+        console.log(`🔍 [ANSWER CHECK]`);
+        console.log(`   runId: ${runId}`);
+        console.log(`   problemId: ${problemId}`);
+        console.log(`   userAnswer: "${answer}"`);
+        console.log(`   correctAnswers from frontend: [${correctAnswers?.join(', ') || 'N/A'}]`);
 
         const run = await prisma.run.findUnique({where: {id: runId}});
         if (!run) {
+            console.log(`   ❌ Run NOT FOUND!`);
             return res.status(404).json({error: "Run not found"});
         }
 
         let isCorrect = false;
         const topic = run.towerId;
 
-        if (run.currentProblemAnswers) {
+        // ✅ Kontroluj odpověď proti correctAnswers od frontendu
+        if (correctAnswers && correctAnswers.length > 0) {
+            console.log(`   Using frontend answers`);
+            isCorrect = correctAnswers.some(correct => isEquivalentAnswer(answer, correct));
+        } else if (run.currentProblemAnswers) {
+            // Fallback - pokud frontend neodesílá correctAnswers (zpětná kompatibilita)
+            console.log(`   Fallback: Using DB answers`);
             const answers: string[] = JSON.parse(run.currentProblemAnswers);
             isCorrect = answers.some(correct => isEquivalentAnswer(answer, correct));
         }
+
+        console.log(`   ✅ Result: ${isCorrect ? 'CORRECT ✓' : 'WRONG ✗'}`);
+        console.log(`========================================\n`);
 
         await prisma.answerLog.create({
             data: {
@@ -213,6 +239,17 @@ app.get('/api/problems/next', (req, res) => {
     }
 });
 
-app.listen( process.env.PORT || 3001, () => {
-    console.log(`🚀 Kuchyně VěžMatu je otevřená! Server naslouchá na http://localhost:${PORT}`);
+app.listen(PORT, () => {
+    console.log(`\n========================================`);
+    console.log(`🚀 BACKEND SPUŠTĚN! 🚀`);
+    console.log(`Kuchyně VěžMatu je otevřená!`);
+    console.log(`Server naslouchá na: http://localhost:${PORT}`);
+    console.log(`========================================\n`);
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+    console.log('\n[Backend] Shutting down...');
+    await prisma.$disconnect();
+    process.exit(0);
 });

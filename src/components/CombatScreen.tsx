@@ -12,12 +12,13 @@ const ROOM_TYPE_LABEL: Record<string, string> = {
     BOSS: '👑 Boss',
 };
 
-function hashString(value: string): number {
-    let hash = 0;
-    for (let i = 0; i < value.length; i++) {
-        hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+function shuffleArray<T>(array: T[]): T[] {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    return hash;
+    return arr;
 }
 
 function parseMathAnswer(value: string): number | null {
@@ -96,14 +97,11 @@ export const CombatScreen: React.FC<Props> = ({
         return () => window.clearTimeout(timer);
     }, [hasAnswered, timeLeft, onAnswer, peekNextRoom, showWrongAnswerDialog]);
 
-    // Deterministické pseudo-zamíchání
+    // Náhodné zamíchání odpovědí
     const answers = useMemo(() => {
         // Vezmeme první správnou odpověď z pole a připojíme špatné odpovědi
         const all = [problem.correctAnswers[0], ...problem.wrongAnswers];
-        return all
-            .map((answer, idx) => ({answer, idx, rank: hashString(`${problem.id}:${answer}:${idx}`)}))
-            .sort((a, b) => a.rank - b.rank)
-            .map(x => x.answer);
+        return shuffleArray(all);
     }, [problem.id, problem.correctAnswers, problem.wrongAnswers]);
 
     // ADD_TIME: sleduj použití itemu a zobraz toast
@@ -167,10 +165,10 @@ export const CombatScreen: React.FC<Props> = ({
                         <p className="text-2xl font-bold text-center" style={{color: 'var(--ink)'}}>🔭 Příští
                             místnost:</p>
                         <p className="text-3xl font-bold text-center">{ROOM_TYPE_LABEL[peekNextRoom]}</p>
-                        <div className="flex gap-3 w-full">
-                            <button className="sketch-btn flex-1 text-lg" onClick={onClosePeek}>Přijmout</button>
-                            <button className="sketch-btn sketch-btn-danger flex-1 text-lg"
-                                    onClick={onPeekSkip}>Přeskočit
+                        <div className="flex gap-3 w-full flex-col">
+                            <button className="sketch-btn text-lg" onClick={onClosePeek}>✓ V pořádku</button>
+                            <button className="sketch-btn sketch-btn-warning text-lg"
+                                    onClick={onPeekSkip}>🔄 Změnit místnost
                             </button>
                         </div>
                     </div>

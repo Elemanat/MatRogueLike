@@ -25,7 +25,8 @@ export interface RunAnswerRequest {
     runId: string;
     problemId: string;
     answer: string;
-    timeSpentMs: number;
+    timeSpentMs?: number;
+    correctAnswers?: string[];
 }
 
 export type RunAnswerState = 'CONTINUE' | 'ENEMY_DEFEATED' | 'FLOOR_COMPLETE' | 'GAME_OVER' | 'VICTORY';

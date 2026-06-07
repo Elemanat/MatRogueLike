@@ -24,14 +24,17 @@ export const TowerSelectScreen: React.FC<Props> = ({onSelect, onBack}) => {
                     return (
                         <button
                             key={tower.id}
-                            className={`sketch-box text-left px-4 py-3 cursor-pointer transition-all border-[0.125rem] ${
+                            className={`sketch-box text-left px-4 py-3 cursor-pointer transition-all border-2 ${
                                 isSelected
                                     ? 'border-[var(--gold)] shadow-[0.2rem_0.2rem_0_var(--gold)] bg-[#fffbe6]'
                                     : 'border-[var(--ink)] shadow-[0.2rem_0.2rem_0_var(--ink)] bg-[var(--paper)]'
                             }`}
                             onClick={() => setSelected(tower)}
                         >
-                            <div className="text-2xl font-bold text-[var(--ink)]">{tower.name}</div>
+                            <div className="flex justify-between items-start">
+                                <div className="text-2xl font-bold text-[var(--ink)]">{tower.name}</div>
+                                {isSelected && <span className="text-3xl">✓</span>}
+                            </div>
                             <div className="text-base text-[var(--ink-light)]">{tower.topic}</div>
                             <div className="text-sm mt-1 text-[var(--ink-light)]">
                                 {tower.floors} patra · {tower.roomsPerFloor} místnosti/patro

@@ -470,20 +470,20 @@ function buildUnitConversionsProblem(themeKey: string, floor: number, enemyType:
 function buildAnglesProblem(themeKey: string, floor: number, enemyType: string, rng: () => number): ApiProblemDto {
     const baseTier = tierIndexFromFloor(floor);
     const difficulty = clamp(baseTier + (enemyType === 'MINIBOSS' ? 1 : enemyType === 'BOSS' ? 2 : 0), 1, 6);
-    const variants = floor <= 2 ? ['complement', 'supplement', 'right-multiple'] : ['complement', 'supplement', 'triangle', 'right-multiple'];
+    const variants = floor <= 2 ? ['complement', 'supplement', 'adjacent'] : ['complement', 'supplement', 'triangle', 'adjacent'];
     const variant = pick(rng, variants);
 
     if (variant === 'complement') {
         const angle = int(rng, 10, 80);
         const result = 90 - angle;
-        const prompt = `Doplň do 90°: ${angle}° = ?`;
+        const prompt = `90° - ${angle}° = ?`;
         return buildNumericProblem(themeKey, prompt, result, difficulty, `a-${difficulty}-comp`, integerCandidates(result));
     }
 
     if (variant === 'supplement') {
         const angle = int(rng, 15, 165);
         const result = 180 - angle;
-        const prompt = `Doplň do 180°: ${angle}° = ?`;
+        const prompt = `180° - ${angle}° = ?`;
         return buildNumericProblem(themeKey, prompt, result, difficulty, `a-${difficulty}-supp`, integerCandidates(result));
     }
 
@@ -495,10 +495,11 @@ function buildAnglesProblem(themeKey: string, floor: number, enemyType: string, 
         return buildNumericProblem(themeKey, prompt, result, difficulty, `a-${difficulty}-tri`, integerCandidates(result));
     }
 
-    const count = int(rng, 2, 5);
-    const result = count * 90;
-    const prompt = `Kolik stupňů mají ${count} pravé úhly?`;
-    return buildNumericProblem(themeKey, prompt, result, difficulty, `a-${difficulty}-right`, integerCandidates(result));
+    // Vedlejší úhly na přímce (jejich součet je 180°)
+    const angle1 = int(rng, 30, 150);
+    const result = 180 - angle1;
+    const prompt = `Na přímce jsou dva vedlejší úhly. Jeden měří ${angle1}°. Kolik měří druhý?`;
+    return buildNumericProblem(themeKey, prompt, result, difficulty, `a-${difficulty}-adjacent`, integerCandidates(result));
 }
 
 const THEME_BUILDERS: Record<string, ProblemBuilder> = {

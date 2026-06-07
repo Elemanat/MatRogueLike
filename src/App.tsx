@@ -32,9 +32,9 @@ function App() {
     }, []);
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-(--paper-dark)">
+        <div className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2">
             <div
-                className="graph-paper w-95 min-h-160 max-h-[95vh] flex flex-col overflow-hidden relative border-2 border-(--ink) shadow-[6px_6px_0_var(--ink)] rounded-[4px_8px_6px_5px/6px_4px_8px_5px]"
+                className="graph-paper w-full max-w-[480px] min-h-[600px] max-h-[95vh] flex flex-col overflow-hidden relative border-2 border-(--ink) shadow-[6px_6px_0_var(--ink)] rounded-[4px_8px_6px_5px/6px_4px_8px_5px]"
             >
                 {/* HUD — pouze při herních stavech */}
                 {showHUD && state.selectedTower && (
@@ -130,7 +130,7 @@ function App() {
                                 itemId: id as typeof ItemId[keyof typeof ItemId]
                             })}
                             onClosePeek={() => dispatch({type: 'CLOSE_PEEK'})}
-                            onPeekSkip={() => dispatch({type: 'PEEK_SKIP_ROOM'})}
+                            onPeekSkip={() => dispatch({type: 'PEEK_REROLL'})}
                             onAddTimeUsed={handleAddTimeUsed}
                         />
                     )}
