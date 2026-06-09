@@ -30,6 +30,24 @@ function generatePlayerCode(): string {
 app.use(cors());
 app.use(express.json());
 
+// ── Health checks ──────────────────────────────────────────────────────────
+
+app.get('/api/health', (_req, res) => {
+    res.json({status: 'ok'});
+});
+
+app.get('/api/ready', async (_req, res) => {
+    try {
+        // Test database connection
+        await prisma.$queryRaw`SELECT 1`;
+        res.json({status: 'ready'});
+    } catch (error) {
+        console.error('Readiness check failed:', error);
+        res.status(503).json({status: 'not ready', error: 'Database connection failed'});
+    }
+});
+// ── API Routes ─────────────────────────────────────────────────────────────
+
 app.post('/api/runs/start', async (req, res) => {
     try {
         const {playerName, towerId} = req.body as RunStartRequest;
@@ -325,7 +343,7 @@ app.get('/api/problems/next', (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`\n========================================`);
     console.log(`🚀 BACKEND SPUŠTĚN! 🚀`);
     console.log(`Kuchyně VěžMatu je otevřená!`);
@@ -334,8 +352,28 @@ app.listen(PORT, () => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', async () => {
-    console.log('\n[Backend] Shutting down...');
-    await prisma.$disconnect();
-    process.exit(0);
-});
+async function gracefulShutdown(signal: string) {
+    console.log(`\n[Backend] Received ${signal}, shutting down gracefully...`);
+    
+    // Přestani přijímat nové requesty
+    server.close(async () => {
+        console.log('[Backend] HTTP server closed');
+        
+        // Odpoj od databáze
+        await prisma.$disconnect();
+        console.log('[Backend] Database disconnected');
+        
+        process.exit(0);
+    });
+    
+    // Force shutdown po 30 sekundách
+    setTimeout(() => {
+        console.error('[Backend] Forced shutdown after 30s timeout');
+        process.exit(1);
+    }, 30000);
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+
