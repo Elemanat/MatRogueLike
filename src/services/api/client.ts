@@ -6,6 +6,7 @@ import type {
     RunStartRequest,
     RunStartResponse,
     PlayerStatsResponse,
+    LoginByCodeResponse,
 } from './contracts';
 
 export interface RunsApi {
@@ -20,6 +21,7 @@ export interface ProblemsApi {
 
 export interface PlayersApi {
     getStats(playerName: string): Promise<PlayerStatsResponse>;
+    loginByCode(code: string): Promise<LoginByCodeResponse>;
 }
 
 export interface ApiClient {

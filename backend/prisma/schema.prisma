@@ -9,6 +9,7 @@ datasource db {
 
 model Player {
   id        String   @id @default(uuid())
+  code      String   @unique
   name      String   @unique
   createdAt DateTime @default(now())
   runs      Run[]
@@ -22,6 +23,7 @@ model Run {
   finishedAt            DateTime?
   status                String      @default("IN_PROGRESS")
   floor                 Int         @default(1)
+  room                  Int         @default(1)
   score                 Int         @default(0)
   currentProblemId      String?
   currentProblemAnswers String?

@@ -1,5 +1,8 @@
 export const Screen = {
     LOGIN: 'LOGIN',
+    NEW_PLAYER: 'NEW_PLAYER',
+    PLAYER_CODE_DIALOG: 'PLAYER_CODE_DIALOG',
+    EXISTING_PLAYER_LOGIN: 'EXISTING_PLAYER_LOGIN',
     MENU: 'MENU',
     TOWER_SELECT: 'TOWER_SELECT',
     INTRO: 'INTRO',
@@ -86,6 +89,8 @@ export interface GameSettings {
 export interface GameState {
     currentScreen: Screen;
     runId: string | null;
+    playerId: string | null;
+    playerCode: string | null;
     playerName: string;
     playerHp: number;
     playerMaxHp: number;
@@ -101,4 +106,6 @@ export interface GameState {
     sessionStats: PlayerStats;
     settings: GameSettings;
     wrongAnswerDialog: { prompt: string; yourAnswer: string; correctAnswers: string[] } | null;
+    isLoading?: boolean;
+    loginError?: string;
 }

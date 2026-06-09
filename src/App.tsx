@@ -7,6 +7,9 @@ import {EmptyRoomScreen} from './components/EmptyRoomScreen';
 import {ChestScreen} from './components/ChestScreen';
 import {WrongAnswerDialog} from './components/WrongAnswerDialog';
 import {LoginScreen} from './screens/LoginScreen';
+import {NewPlayerScreen} from './screens/NewPlayerScreen';
+import {ExistingPlayerLoginScreen} from './screens/ExistingPlayerLoginScreen';
+import {PlayerCodeDialog} from './screens/PlayerCodeDialog';
 import {MenuScreen} from './screens/MenuScreen';
 import {TowerSelectScreen} from './screens/TowerSelectScreen';
 import {IntroScreen} from './screens/IntroScreen';
@@ -50,10 +53,35 @@ function App() {
                 <div className="flex-1 overflow-y-auto flex flex-col">
 
                     {state.currentScreen === Screen.LOGIN && (
-                        <LoginScreen onEnter={name => {
-                            dispatch({type: 'SET_NAME', name});
-                            dispatch({type: 'TO_MENU'});
-                        }}/>
+                        <LoginScreen
+                            onNewPlayer={() => dispatch({type: 'TO_NEW_PLAYER'})}
+                            onExistingPlayer={() => dispatch({type: 'TO_EXISTING_PLAYER_LOGIN'})}
+                        />
+                    )}
+
+                    {state.currentScreen === Screen.PLAYER_CODE_DIALOG && (
+                        <PlayerCodeDialog
+                            playerName={state.playerName}
+                            playerCode={state.playerCode || ''}
+                            onClose={() => dispatch({type: 'PLAYER_CODE_DIALOG_CLOSED'})}
+                        />
+                    )}
+
+                    {state.currentScreen === Screen.NEW_PLAYER && (
+                        <NewPlayerScreen
+                            onSubmit={name => actions.createNewPlayer(name)}
+                            onBack={() => dispatch({type: 'TO_LOGIN'})}
+                            isLoading={state.isLoading}
+                        />
+                    )}
+
+                    {state.currentScreen === Screen.EXISTING_PLAYER_LOGIN && (
+                        <ExistingPlayerLoginScreen
+                            onSubmit={code => actions.loginByCode(code)}
+                            onBack={() => dispatch({type: 'TO_LOGIN'})}
+                            isLoading={state.isLoading}
+                            error={state.loginError}
+                        />
                     )}
 
                     {state.currentScreen === Screen.MENU && (

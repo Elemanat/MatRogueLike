@@ -4,7 +4,6 @@ import type {GameState, Item, Tower, Enemy, Problem, PlayerStats, GameSettings} 
 import {ALL_ITEMS} from '../services/gameCatalog';
 import {apiClient} from '../services/api';
 import {mapProblemDtoToProblem} from '../services/api/mappers';
-import {generateProblem} from '../services/api/problemGenerator';
 import type {RunAnswerResponse} from '../services/api/contracts';
 
 const ENEMIES_NORMAL = ['Zlý zlomek', 'Záludná rovnice', 'Číselný duch', 'Rozbitá desetina'];
@@ -14,6 +13,8 @@ const ENEMIES_BOSS = ['BOSS: Arcivládce Čísel', 'BOSS: Nekonečný Zlomek'];
 const STORAGE_KEY_SESSION_STATS = 'vezmat.sessionStats.v1';
 const STORAGE_KEY_SETTINGS = 'vezmat.settings.v1';
 const STORAGE_KEY_LAST_PLAYER = 'vezmat.lastPlayer.v1';
+const STORAGE_KEY_PLAYER_ID = 'vezmat.playerId.v1';
+const STORAGE_KEY_PLAYER_CODE = 'vezmat.playerCode.v1';
 
 const defaultSettings: GameSettings = {
     roundTimeSeconds: 20,
@@ -57,14 +58,6 @@ function resolveRewardItem(rewardItemId?: string): Item {
     return ALL_ITEMS.find(item => item.id === rewardItemId) ?? pick(ALL_ITEMS);
 }
 
-/**
- * Generates a problem locally (fallback for when API is unavailable).
- * Used to bootstrap initial problem or as fallback when API fails.
- */
-function generateLocalProblem(towerId: string, floor: number, enemyType: string): Problem {
-    const dto = generateProblem({towerId, floor, enemyType, seed: `local-${Math.random()}`});
-    return mapProblemDtoToProblem(dto);
-}
 
 function makeEnemy(type: EnemyType): Enemy {
     if (type === EnemyType.BOSS) return {name: pick(ENEMIES_BOSS), type, maxHp: 5, hp: 5};
@@ -104,6 +97,8 @@ const initialStats: PlayerStats = {enemiesDefeated: 0, floorsCompleted: 0, corre
 const initialState: GameState = {
     currentScreen: Screen.LOGIN,
     runId: null,
+    playerId: null,
+    playerCode: null,
     playerName: '',
     playerHp: 3,
     playerMaxHp: 3,
@@ -127,10 +122,14 @@ function initState(): GameState {
     const storedStats = readStorageJson<unknown>(STORAGE_KEY_SESSION_STATS);
     const storedSettings = readStorageJson<unknown>(STORAGE_KEY_SETTINGS);
     const storedPlayer = window.localStorage.getItem(STORAGE_KEY_LAST_PLAYER);
+    const storedPlayerId = window.localStorage.getItem(STORAGE_KEY_PLAYER_ID);
+    const storedPlayerCode = window.localStorage.getItem(STORAGE_KEY_PLAYER_CODE);
 
     return {
         ...initialState,
         playerName: storedPlayer ?? '',
+        playerId: storedPlayerId ?? null,
+        playerCode: storedPlayerCode ?? null,
         sessionStats: isPlayerStats(storedStats) ? storedStats : {...initialStats},
         settings: isGameSettings(storedSettings)
             ? {
@@ -146,13 +145,20 @@ function initState(): GameState {
 type Action =
     | { type: 'SET_NAME'; name: string }
     | { type: 'SELECT_TOWER'; tower: Tower }
+    | { type: 'TO_LOGIN' }
+    | { type: 'TO_NEW_PLAYER' }
+    | { type: 'CREATE_NEW_PLAYER_SUCCESS'; playerId: string; playerCode: string; playerName: string; runId: string }
+    | { type: 'PLAYER_CODE_DIALOG_CLOSED' }
+    | { type: 'TO_EXISTING_PLAYER_LOGIN' }
+    | { type: 'LOGIN_BY_CODE_SUCCESS'; playerId: string; playerCode: string; playerName: string }
+    | { type: 'LOGIN_BY_CODE_ERROR'; error: string }
     | { type: 'TO_MENU' }
     | { type: 'TO_TOWER_SELECT' }
     | { type: 'TO_INTRO' }
     | { type: 'TO_SETTINGS' }
     | { type: 'TO_STATISTICS' }
     | { type: 'LOGOUT' }
-    | { type: 'START_RUN'; runId?: string; initialProblem?: Problem | null }
+    | { type: 'START_RUN'; runId?: string; playerId?: string; playerCode?: string; initialProblem?: Problem | null }
     | { type: 'CONTINUE' }
     | { type: 'ANSWER'; correct: boolean; answer?: string; result?: ResolvedRunAnswerResponse }
     | { type: 'USE_ITEM'; itemId: ItemId }
@@ -185,16 +191,16 @@ function advanceRoom(state: GameState): GameState {
         const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
             ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
             : null;
-        return {
-            ...state,
-            floor: nextFloor,
-            room: 1,
-            currentScreen: screen,
-            currentEnemy: enemy,
-            currentProblem: enemy ? generateLocalProblem(tower.id, nextFloor, enemy.type === EnemyType.BOSS ? 'BOSS' : enemy.type === EnemyType.MINIBOSS ? 'MINIBOSS' : 'NORMAL') : null,
-            peekNextRoom: null,
-            rewardItem: null,
-        };
+         return {
+             ...state,
+             floor: nextFloor,
+             room: 1,
+             currentScreen: screen,
+             currentEnemy: enemy,
+             currentProblem: null,
+             peekNextRoom: null,
+             rewardItem: null,
+         };
     }
 
     const rt = generateRoomType(nextRoom, tower.roomsPerFloor, state.floor, tower.floors);
@@ -202,15 +208,15 @@ function advanceRoom(state: GameState): GameState {
     const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
         ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
         : null;
-    return {
-        ...state,
-        room: nextRoom,
-        currentScreen: screen,
-        currentEnemy: enemy,
-        currentProblem: enemy ? generateLocalProblem(tower.id, state.floor, enemy.type === EnemyType.BOSS ? 'BOSS' : enemy.type === EnemyType.MINIBOSS ? 'MINIBOSS' : 'NORMAL') : null,
-        peekNextRoom: null,
-        rewardItem: null,
-    };
+     return {
+         ...state,
+         room: nextRoom,
+         currentScreen: screen,
+         currentEnemy: enemy,
+         currentProblem: null,
+         peekNextRoom: null,
+         rewardItem: null,
+     };
 }
 
 function reducer(state: GameState, action: Action): GameState {
@@ -222,10 +228,50 @@ function reducer(state: GameState, action: Action): GameState {
         case 'SELECT_TOWER':
             return {...state, selectedTower: action.tower};
 
+        case 'TO_LOGIN':
+            return {...initialState, currentScreen: Screen.LOGIN, settings: state.settings};
+
+        case 'TO_NEW_PLAYER':
+            return {...state, currentScreen: Screen.NEW_PLAYER, isLoading: false, loginError: undefined};
+
+        case 'TO_EXISTING_PLAYER_LOGIN':
+            return {...state, currentScreen: Screen.EXISTING_PLAYER_LOGIN, isLoading: false, loginError: undefined};
+
+        case 'CREATE_NEW_PLAYER_SUCCESS':
+            return {
+                ...state,
+                playerId: action.playerId,
+                playerCode: action.playerCode,
+                playerName: action.playerName,
+                runId: action.runId,
+                currentScreen: Screen.PLAYER_CODE_DIALOG,
+                isLoading: false,
+                loginError: undefined,
+            };
+
+        case 'PLAYER_CODE_DIALOG_CLOSED':
+            return {...state, currentScreen: Screen.MENU};
+
+        case 'LOGIN_BY_CODE_SUCCESS':
+            return {
+                ...state,
+                playerId: action.playerId,
+                playerCode: action.playerCode,
+                playerName: action.playerName,
+                currentScreen: Screen.MENU,
+                isLoading: false,
+                loginError: undefined,
+            };
+
+        case 'LOGIN_BY_CODE_ERROR':
+            return {...state, isLoading: false, loginError: action.error};
+
         case 'TO_MENU':
             return {
                 ...initialState,
                 playerName: state.playerName,
+                playerId: state.playerId,
+                playerCode: state.playerCode,
                 currentScreen: Screen.MENU,
                 sessionStats: state.sessionStats,
                 settings: state.settings,
@@ -253,21 +299,23 @@ function reducer(state: GameState, action: Action): GameState {
             const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
                 ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
                 : null;
-            return {
-                ...state,
-                currentScreen: screen,
-                playerHp: 3,
-                playerMaxHp: 3,
-                floor: 1,
-                room: 1,
-                inventory: [],
-                currentEnemy: enemy,
-                currentProblem: enemy ? (action.initialProblem ?? generateLocalProblem(tower.id, 1, enemy.type === EnemyType.BOSS ? 'BOSS' : enemy.type === EnemyType.MINIBOSS ? 'MINIBOSS' : 'NORMAL')) : null,
-                peekNextRoom: null,
-                rewardItem: null,
-                runStats: {...initialStats},
-                runId: action.runId ?? null,
-            };
+             return {
+                 ...state,
+                 currentScreen: screen,
+                 playerHp: 3,
+                 playerMaxHp: 3,
+                 floor: 1,
+                 room: 1,
+                 inventory: [],
+                 currentEnemy: enemy,
+                 currentProblem: action.initialProblem ?? null,
+                 peekNextRoom: null,
+                 rewardItem: null,
+                 runStats: {...initialStats},
+                 runId: action.runId ?? null,
+                 playerId: action.playerId ?? null,
+                 playerCode: action.playerCode ?? null,
+             };
         }
 
         case 'CONTINUE':
@@ -277,8 +325,8 @@ function reducer(state: GameState, action: Action): GameState {
             const tower = state.selectedTower;
             if (!tower || !state.currentEnemy) return state;
 
-            const apiState = action.result?.state;
-            const nextProblem = action.result?.nextProblem ?? (tower ? generateLocalProblem(tower.id, state.floor, state.currentEnemy.type === EnemyType.BOSS ? 'BOSS' : state.currentEnemy.type === EnemyType.MINIBOSS ? 'MINIBOSS' : 'NORMAL') : null);
+             const apiState = action.result?.state;
+             const nextProblem = action.result?.nextProblem ?? null;
 
             if (action.correct) {
                 const enemy = state.currentEnemy;
@@ -425,7 +473,7 @@ function reducer(state: GameState, action: Action): GameState {
                 case ItemId.CHANGE_PROB:
                     return {
                         ...state,
-                        currentProblem: state.currentEnemy ? generateLocalProblem(tower.id, state.floor, state.currentEnemy.type === EnemyType.BOSS ? 'BOSS' : state.currentEnemy.type === EnemyType.MINIBOSS ? 'MINIBOSS' : 'NORMAL') : null,
+                        currentProblem: null,
                         inventory: withoutOne(ItemId.CHANGE_PROB),
                     };
                 case ItemId.SKIP: {
@@ -490,6 +538,8 @@ function reducer(state: GameState, action: Action): GameState {
             return {
                 ...initialState,
                 playerName: state.playerName,
+                playerId: state.playerId,
+                playerCode: state.playerCode,
                 selectedTower: state.selectedTower,
                 currentScreen: Screen.INTRO,
                 sessionStats: state.sessionStats,
@@ -534,9 +584,16 @@ export function useGameState() {
             });
 
             console.log('[gameState.startRun] Got response:', response);
+
+            // Uložit playerId a playerCode do localStorage
+            window.localStorage.setItem(STORAGE_KEY_PLAYER_ID, response.playerId);
+            window.localStorage.setItem(STORAGE_KEY_PLAYER_CODE, response.playerCode);
+
             dispatch({
                 type: 'START_RUN',
                 runId: response.runId,
+                playerId: response.playerId,
+                playerCode: response.playerCode,
                 initialProblem: response.initialProblem ? mapProblemDtoToProblem(response.initialProblem) : null,
             });
         } catch (error) {
@@ -560,6 +617,9 @@ export function useGameState() {
                 problemId,
                 answer: answerText,
                 correctAnswers: state.currentProblem?.correctAnswers,
+                floor: state.floor,
+                room: state.room,
+                items: JSON.stringify(state.inventory),
             });
 
             dispatch({
@@ -576,15 +636,66 @@ export function useGameState() {
         }
     }, [state.currentProblem?.id, state.runId]);
 
+    const createNewPlayer = useCallback(async (playerName: string) => {
+        try {
+            const response = await apiClient.runs.startRun({
+                playerName,
+                towerId: 'fractions',
+            });
+
+            window.localStorage.setItem(STORAGE_KEY_PLAYER_ID, response.playerId);
+            window.localStorage.setItem(STORAGE_KEY_PLAYER_CODE, response.playerCode);
+            window.localStorage.setItem(STORAGE_KEY_LAST_PLAYER, playerName);
+
+            dispatch({
+                type: 'CREATE_NEW_PLAYER_SUCCESS',
+                playerId: response.playerId,
+                playerCode: response.playerCode,
+                playerName,
+                runId: response.runId,
+            });
+        } catch (error) {
+            console.error('[gameState.createNewPlayer] Error:', error);
+            dispatch({type: 'TO_LOGIN'});
+        }
+    }, []);
+
+    const loginByCode = useCallback(async (code: string) => {
+        try {
+            dispatch({type: 'TO_EXISTING_PLAYER_LOGIN'});
+
+            const response = await apiClient.players.loginByCode(code);
+
+            window.localStorage.setItem(STORAGE_KEY_PLAYER_ID, response.playerId);
+            window.localStorage.setItem(STORAGE_KEY_PLAYER_CODE, response.playerCode);
+            window.localStorage.setItem(STORAGE_KEY_LAST_PLAYER, response.playerName);
+
+            dispatch({
+                type: 'LOGIN_BY_CODE_SUCCESS',
+                playerId: response.playerId,
+                playerCode: response.playerCode,
+                playerName: response.playerName,
+            });
+        } catch (error) {
+            console.error('[gameState.loginByCode] Error:', error);
+            dispatch({
+                type: 'LOGIN_BY_CODE_ERROR',
+                error: 'Neplatný kód. Zkuste znovu.'
+            });
+        }
+    }, []);
+
     useEffect(() => {
         try {
             window.localStorage.setItem(STORAGE_KEY_SESSION_STATS, JSON.stringify(state.sessionStats));
             window.localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(state.settings));
             window.localStorage.setItem(STORAGE_KEY_LAST_PLAYER, state.playerName);
+            if (state.playerId) window.localStorage.setItem(STORAGE_KEY_PLAYER_ID, state.playerId);
+            if (state.playerCode) window.localStorage.setItem(STORAGE_KEY_PLAYER_CODE, state.playerCode);
         } catch {
             // Ignore quota/privacy errors; game should remain playable without persistence.
         }
-    }, [state.sessionStats, state.settings, state.playerName]);
+    }, [state.sessionStats, state.settings, state.playerName, state.playerId, state.playerCode]);
 
-    return {state, dispatch, actions: {startRun, answer}};
+    return {state, dispatch, actions: {startRun, answer, createNewPlayer, loginByCode}};
 }

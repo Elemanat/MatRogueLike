@@ -7,6 +7,7 @@ import type {
     RunStartRequest,
     RunStartResponse,
     PlayerStatsResponse,
+    LoginByCodeResponse,
 } from './contracts';
 import type {ApiRuntimeConfig} from './config';
 
@@ -80,6 +81,12 @@ export function createRealApiClient(config: ApiRuntimeConfig): ApiClient {
             async getStats(playerName: string): Promise<PlayerStatsResponse> {
                 return fetchJson<PlayerStatsResponse>(baseUrl, config.timeoutMs, `/api/players/${encodeURIComponent(playerName)}/stats`, {
                     method: 'GET',
+                });
+            },
+            async loginByCode(code: string): Promise<LoginByCodeResponse> {
+                return fetchJson<LoginByCodeResponse>(baseUrl, config.timeoutMs, '/api/players/login-by-code', {
+                    method: 'POST',
+                    body: JSON.stringify({code}),
                 });
             },
         },

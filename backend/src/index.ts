@@ -18,6 +18,15 @@ const prisma = new PrismaClient({
     log: ['error', 'warn'],
 });
 
+function generatePlayerCode(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
 app.use(cors());
 app.use(express.json());
 
@@ -28,7 +37,7 @@ app.post('/api/runs/start', async (req, res) => {
 
         let player = await prisma.player.findUnique({where: {name: playerName}});
         if (!player) {
-            player = await prisma.player.create({data: {name: playerName}});
+            player = await prisma.player.create({data: {name: playerName, code: generatePlayerCode()}});
         }
 
         const seed = `${playerName}-${Date.now()}`;
@@ -54,6 +63,8 @@ app.post('/api/runs/start', async (req, res) => {
 
         res.json({
             runId: run.id,
+            playerId: player.id,
+            playerCode: player.code,
             startedAt: run.startedAt,
             seed: run.seed,
             hp: run.hp,
@@ -68,7 +79,16 @@ app.post('/api/runs/start', async (req, res) => {
 
 app.post('/api/runs/answer', async (req, res) => {
     try {
-        const {runId, problemId, answer, timeSpentMs, correctAnswers} = req.body as RunAnswerRequest;
+        const {
+            runId,
+            problemId,
+            answer,
+            timeSpentMs,
+            correctAnswers,
+            floor,
+            room,
+            items
+        } = req.body as RunAnswerRequest;
 
         console.log(`\n========================================`);
         console.log(`🔍 [ANSWER CHECK]`);
@@ -107,7 +127,7 @@ app.post('/api/runs/answer', async (req, res) => {
                 topic: topic,
                 playerAnswer: answer,
                 isCorrect: isCorrect,
-                timeSpentMs: timeSpentMs
+                timeSpentMs: timeSpentMs ?? null
             }
         });
 
@@ -141,6 +161,9 @@ app.post('/api/runs/answer', async (req, res) => {
                 currentProblemAnswers: nextProblem ? JSON.stringify(nextProblem.correctAnswers) : null,
                 score: newScore,
                 hp: newHp,
+                floor: floor ?? run.floor,
+                room: room ?? run.room,
+                items: items ?? run.items,
                 status: state === 'GAME_OVER' ? 'GAME_OVER' : run.status,
                 finishedAt: state === 'GAME_OVER' ? new Date() : null
             }
@@ -153,6 +176,33 @@ app.post('/api/runs/answer', async (req, res) => {
             currentScore: newScore,
             nextProblem,
             rewardItemId: isCorrect ? (Math.random() > 0.8 ? "ADD_TIME" : undefined) : undefined
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "Internal server error"});
+    }
+});
+
+app.post('/api/players/login-by-code', async (req, res) => {
+    try {
+        const {code} = req.body;
+
+        if (!code) {
+            return res.status(400).json({error: "Code is required"});
+        }
+
+        const player = await prisma.player.findUnique({
+            where: {code}
+        });
+
+        if (!player) {
+            return res.status(404).json({error: "Player not found"});
+        }
+
+        res.json({
+            playerId: player.id,
+            playerCode: player.code,
+            playerName: player.name
         });
     } catch (error) {
         console.error(error);
@@ -216,6 +266,42 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
     }
 });
 
+app.get('/api/runs/active', async (req, res) => {
+    try {
+        const playerId = req.query.playerId as string;
+        if (!playerId) {
+            return res.status(400).json({error: "playerId is required"});
+        }
+
+        const run = await prisma.run.findFirst({
+            where: {
+                playerId,
+                status: 'IN_PROGRESS'
+            }
+        });
+
+        if (!run) {
+            return res.status(404).json({error: "No active run found"});
+        }
+
+        res.json({
+            runId: run.id,
+            towerId: run.towerId,
+            floor: run.floor,
+            room: run.room,
+            hp: run.hp,
+            maxHp: run.maxHp,
+            score: run.score,
+            items: run.items,
+            currentProblemId: run.currentProblemId,
+            currentProblemAnswers: run.currentProblemAnswers,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "Internal server error"});
+    }
+});
+
 const PORT = process.env.PORT || 3001;
 
 app.get('/api/problems/next', (req, res) => {
@@ -232,10 +318,10 @@ app.get('/api/problems/next', (req, res) => {
             seed: `${towerId}:${floor}:${enemyType}:${Date.now()}`
         });
 
-        res.json({ problem });
+        res.json({problem});
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({error: "Internal server error"});
     }
 });
 
