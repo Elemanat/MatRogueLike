@@ -231,15 +231,18 @@ function buildFractionProblem(themeKey: string, floor: number, enemyType: string
     const denominatorsHigh = [3, 4, 5, 6, 8, 9, 10, 12];
     const denominatorPool = floor <= 2 ? denominatorsLow : denominatorsHigh;
     const denominator = pick(rng, denominatorPool);
+    // Easy: jen se stejným jmenovatelem (add, subtract). Medium/Hard: i krácení a sčítání s různými jmenovateli.
     const variantsPool = floor <= 1 ? ['add', 'subtract'] : ['add', 'subtract', 'reduce', 'add-diff-den'];
     const variant = pick(rng, variantsPool);
     const baseTier = tierIndexFromFloor(floor);
     const difficulty = clamp(baseTier + (enemyType === 'MINIBOSS' ? 1 : enemyType === 'BOSS' ? 2 : 0), 1, 6);
 
     if (variant === 'add-diff-den') {
+        // Sčítání s různým jmenovatelem (např. 1/2 + 1/4)
         const pairs = [
             {d1: 2, d2: 4}, {d1: 2, d2: 6}, {d1: 3, d2: 6}, {d1: 2, d2: 8}, {d1: 4, d2: 8}, {d1: 5, d2: 10}
         ];
+        // Vyšší patro může mít složitější páry (např. 2 a 3 -> společný 6, nebo 3 a 4 -> 12)
         const hardPairs = [
             {d1: 2, d2: 3}, {d1: 3, d2: 4}, {d1: 2, d2: 5}, {d1: 3, d2: 5}, {d1: 4, d2: 5}
         ];
@@ -251,11 +254,14 @@ function buildFractionProblem(themeKey: string, floor: number, enemyType: string
         const resultNum = num1 * pair.d2 + num2 * pair.d1;
         const resultDen = pair.d1 * pair.d2;
 
+        // Pro zápis zkusmo zajistíme, že výsledek je i menší než 1, pokud dáváme jako odpověď vždy čistý zlomek
+        // (někdy vyleze smíšené číslo, to zatím neřešíme, funkce to převede na normální zlomek).
         const prompt = `${num1}/${pair.d1} + ${num2}/${pair.d2} = ?`;
         const correctAnswers = equivalentAnswersForFraction(resultNum, resultDen);
 
-        const fake1 = formatFraction(num1 + num2, pair.d1 + pair.d2);
-        const fake2 = formatFraction(num1 + num2, pair.d1 * pair.d2);
+        // Lživé zkusí sečíst jmenovatele nebo udělat základní chyby
+        const fake1 = formatFraction(num1 + num2, pair.d1 + pair.d2); // Špatně sečte vršky i spodky
+        const fake2 = formatFraction(num1 + num2, pair.d1 * pair.d2); // Správně spodky, špatně vršky
         const wrongPool = fractionCandidates(resultNum, resultDen, rng);
         wrongPool.push(fake1, fake2);
 
@@ -347,11 +353,13 @@ function buildDivisibilityProblem(themeKey: string, floor: number, enemyType: st
     const variant = pick(rng, ['divisible', 'prime']);
 
     if (variant === 'divisible') {
+        // V na vyšších patrech zkoušíme 3, 4, 6, 8, 9. Na nižších 2, 5, 10.
         const divisors = floor <= 2 ? [2, 3, 5, 10] : [3, 4, 6, 8, 9];
         const divisor = pick(rng, divisors);
         const correct = divisor * int(rng, 3 + difficulty, 10 + difficulty * 4);
         const prompt = `Které z čísel je dělitelné číslem ${divisor}?`;
 
+        // Špatné odpovědi: čísla, co vypadají lákavě, ale nejsou
         const wrongs = [];
         while (wrongs.length < 5) {
             const trap = divisor * int(rng, 3, 20) + pick(rng, [1, 2, divisor - 1]);
@@ -374,6 +382,7 @@ function buildDivisibilityProblem(themeKey: string, floor: number, enemyType: st
     const correct = pick(rng, primePool);
     const prompt = 'Které z čísel je prvočíslo?';
 
+    // "Falešná prvočísla", která žáci často tipují (lichá, dělitelná 3 nebo 7, končící na 1,3,7,9)
     const pseudoPrimes = [9, 15, 21, 25, 27, 33, 35, 39, 49, 51, 55, 57, 63, 65, 69, 75, 77, 81, 85, 87, 91, 93, 95];
     const wrongPool = uniqueIntegers(rng, pseudoPrimes, 5, value => value !== correct);
 
@@ -393,6 +402,7 @@ function buildDecimalsProblem(themeKey: string, floor: number, enemyType: string
     const variant = pick(rng, ['add', 'subtract', 'convert']);
 
     if (variant === 'add') {
+        // Pro vyšší patra používáme větší čísla nebo setinná místa (děleno 100)
         const factor = floor >= 3 ? 100 : 10;
         const left = int(rng, 10, 99 + floor * 50) / factor;
         const right = int(rng, 10, 99 + floor * 50) / factor;
@@ -403,7 +413,7 @@ function buildDecimalsProblem(themeKey: string, floor: number, enemyType: string
             formatDecimal(result + 0.1),
             formatDecimal(result + 1),
             formatDecimal(result - 1),
-            formatDecimal(left + right * 10),
+            formatDecimal(left + right * 10), // chyba s desetinnou čárkou
             formatDecimal((left * factor + right * factor + 1) / factor)
         ];
 
@@ -421,7 +431,7 @@ function buildDecimalsProblem(themeKey: string, floor: number, enemyType: string
             formatDecimal(result + 0.1),
             formatDecimal(result - 0.1),
             formatDecimal(result + 1),
-            formatDecimal(Number(formatDecimal(left)) - Math.floor(right)),
+            formatDecimal(Number(formatDecimal(left)) - Math.floor(right)), // chyba odpočtu jen celých částí
         ];
 
         return buildNumericProblem(themeKey, prompt, result, difficulty, `dec-${difficulty}-sub`, candidates);
@@ -460,20 +470,20 @@ function buildUnitConversionsProblem(themeKey: string, floor: number, enemyType:
 function buildAnglesProblem(themeKey: string, floor: number, enemyType: string, rng: () => number): ApiProblemDto {
     const baseTier = tierIndexFromFloor(floor);
     const difficulty = clamp(baseTier + (enemyType === 'MINIBOSS' ? 1 : enemyType === 'BOSS' ? 2 : 0), 1, 6);
-    const variants = floor <= 2 ? ['complement', 'supplement', 'right-multiple'] : ['complement', 'supplement', 'triangle', 'right-multiple'];
+    const variants = floor <= 2 ? ['complement', 'supplement', 'adjacent'] : ['complement', 'supplement', 'triangle', 'adjacent'];
     const variant = pick(rng, variants);
 
     if (variant === 'complement') {
         const angle = int(rng, 10, 80);
         const result = 90 - angle;
-        const prompt = `Doplň do 90°: ${angle}° = ?`;
+        const prompt = `90° - ${angle}° = ?`;
         return buildNumericProblem(themeKey, prompt, result, difficulty, `a-${difficulty}-comp`, integerCandidates(result));
     }
 
     if (variant === 'supplement') {
         const angle = int(rng, 15, 165);
         const result = 180 - angle;
-        const prompt = `Doplň do 180°: ${angle}° = ?`;
+        const prompt = `180° - ${angle}° = ?`;
         return buildNumericProblem(themeKey, prompt, result, difficulty, `a-${difficulty}-supp`, integerCandidates(result));
     }
 
@@ -485,10 +495,11 @@ function buildAnglesProblem(themeKey: string, floor: number, enemyType: string, 
         return buildNumericProblem(themeKey, prompt, result, difficulty, `a-${difficulty}-tri`, integerCandidates(result));
     }
 
-    const count = int(rng, 2, 5);
-    const result = count * 90;
-    const prompt = `Kolik stupňů mají ${count} pravé úhly?`;
-    return buildNumericProblem(themeKey, prompt, result, difficulty, `a-${difficulty}-right`, integerCandidates(result));
+    // Vedlejší úhly na přímce (jejich součet je 180°)
+    const angle1 = int(rng, 30, 150);
+    const result = 180 - angle1;
+    const prompt = `Na přímce jsou dva vedlejší úhly. Jeden měří ${angle1}°. Kolik měří druhý?`;
+    return buildNumericProblem(themeKey, prompt, result, difficulty, `a-${difficulty}-adjacent`, integerCandidates(result));
 }
 
 const THEME_BUILDERS: Record<string, ProblemBuilder> = {
@@ -514,15 +525,21 @@ export function generateProblem(request: ProblemGenerationRequest): ApiProblemDt
     const themeKey = resolveThemeKey(request.towerId);
     const seed = `${themeKey}:${request.floor}:${request.enemyType}:${request.seed ?? ''}`;
     const rng = createRng(seed);
-    const builder = THEME_BUILDERS[themeKey] ?? THEME_BUILDERS.fractions;
 
-    return builder(request, rng, themeKey);
+    const builder = THEME_BUILDERS[themeKey];
+
+    if (builder) {
+        return builder(request, rng, themeKey);
+    }
+
+    return buildFractionProblem(themeKey, request.floor, request.enemyType, rng);
 }
 
 export function isEquivalentAnswer(selected: string, correct: string): boolean {
     return answersEquivalent(selected, correct);
 }
 
+// Utility: generate multiple problems (sampling) for quick checks / tests
 export function generateProblems(request: ProblemGenerationRequest, count = 10): ApiProblemDto[] {
     const problems: ApiProblemDto[] = [];
     for (let i = 0; i < count; i++) {
@@ -532,21 +549,25 @@ export function generateProblems(request: ProblemGenerationRequest, count = 10):
     return problems;
 }
 
+// Validate a generated problem for basic correctness. Returns array of issues (empty = OK).
 export function validateProblem(p: ApiProblemDto): string[] {
     const issues: string[] = [];
     if (!p.id) issues.push('missing id');
     if (!p.prompt) issues.push('missing prompt');
     if (!p.correctAnswers || p.correctAnswers.length === 0) issues.push('no correctAnswers');
 
+    // Parse canonical numeric value from first correct answer when possible
     const canonical = parseAnswer(p.correctAnswers[0] ?? '');
     if (canonical === null) {
         // For non-numeric answers we skip numeric checks
     } else {
+        // check each declared correct answer is equivalent
         for (const ca of p.correctAnswers) {
             if (!answersEquivalent(ca, String(canonical))) {
                 issues.push(`correctAnswer "${ca}" not equivalent to canonical ${canonical}`);
             }
         }
+        // check wrong answers are not equivalent
         for (const wa of p.wrongAnswers ?? []) {
             if (answersEquivalent(wa, String(canonical))) {
                 issues.push(`wrongAnswer "${wa}" is equivalent to canonical ${canonical}`);
@@ -554,14 +575,17 @@ export function validateProblem(p: ApiProblemDto): string[] {
         }
     }
 
+    // Odchycení dělení nulou a nesmyslů
     if (p.prompt.includes('/0 ') || p.prompt.includes('/ 0') || p.prompt.includes('÷ 0')) {
         issues.push('div by zero in prompt');
     }
 
+    // Příliš šíleně obří čísla, co přesahují učivo 6. třidy a šly by těžko z hlavy
     if (p.prompt.match(/\d{5,}/)) {
         issues.push('numbers too large for 6th grade math (5+ digits)');
     }
 
+    // ensure at least two wrong answers
     if (!p.wrongAnswers || p.wrongAnswers.length < 2) issues.push('less than 2 wrongAnswers');
 
     return issues;

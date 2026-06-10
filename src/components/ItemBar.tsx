@@ -17,30 +17,24 @@ const ITEM_EMOJI: Record<string, string> = {
 };
 
 export const ItemBar: React.FC<Props> = ({ inventory, onUse, disabled }) => (
-  <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
-    {inventory.map((item, idx) => (
-      <button
-        key={`${item.id}-${idx}`}
-        className="sketch-box-light"
-        title={`${item.name}: ${item.description}`}
-        disabled={disabled}
-        onClick={() => onUse(item.id)}
-        style={{
-          width: 44, height: 44, fontSize: '1.4rem',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          opacity: disabled ? 0.5 : 1,
-          padding: 0,
-        }}
-      >
-        {ITEM_EMOJI[item.id] ?? '?'}
-      </button>
-    ))}
-    {inventory.length === 0 && (
-      <span style={{ color: 'var(--ink-light)', fontSize: '0.9rem', alignSelf: 'center' }}>
+    <div className="flex flex-wrap justify-center gap-2">
+      {inventory.map((item, idx) => (
+          <button
+              key={`${item.id}-${idx}`}
+              className={`sketch-box-light flex items-center justify-center w-11 h-11 text-2xl p-0 ${
+                  disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+              }`}
+              title={`${item.name}: ${item.description}`}
+              disabled={disabled}
+              onClick={() => onUse(item.id)}
+          >
+            {ITEM_EMOJI[item.id] ?? '?'}
+          </button>
+      ))}
+      {inventory.length === 0 && (
+          <span className="self-center text-sm" style={{ color: 'var(--ink-light)' }}>
         (prázdný inventář)
       </span>
-    )}
-  </div>
+      )}
+    </div>
 );
-

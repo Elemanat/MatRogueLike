@@ -15,6 +15,9 @@ export interface RunStartRequest {
 export interface RunStartResponse {
     runId: string;
     startedAt: string;
+    seed: string;
+    hp: number;
+    maxHp: number;
     initialProblem?: ApiProblemDto;
 }
 
@@ -22,6 +25,7 @@ export interface RunAnswerRequest {
     runId: string;
     problemId: string;
     answer: string;
+    timeSpentMs?: number;
     correctAnswers?: string[];
 }
 
@@ -30,6 +34,8 @@ export type RunAnswerState = 'CONTINUE' | 'ENEMY_DEFEATED' | 'FLOOR_COMPLETE' | 
 export interface RunAnswerResponse {
     isCorrect: boolean;
     state: RunAnswerState;
+    currentHp: number;
+    currentScore: number;
     nextProblem?: ApiProblemDto;
     rewardItemId?: string;
 }
@@ -42,15 +48,4 @@ export interface NextProblemRequest {
 
 export interface NextProblemResponse {
     problem: ApiProblemDto;
-}
-
-export interface PlayerStatsResponse {
-    playerName: string;
-    overall: {
-        totalRuns: number;
-        totalAnswers: number;
-        correctAnswers: number;
-        accuracyPercentage: number;
-    };
-    byTopic: Record<string, { total: number; correct: number }>;
 }

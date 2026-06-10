@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  runs      Run[]
+}
+
+model Run {
+  id                    String      @id @default(uuid())
+  playerId              String
+  towerId               String
+  startedAt             DateTime    @default(now())
+  finishedAt            DateTime?
+  status                String      @default("IN_PROGRESS")
+  floor                 Int         @default(1)
+  score                 Int         @default(0)
+  currentProblemId      String?
+  currentProblemAnswers String?
+  hp                    Int         @default(3)
+  maxHp                 Int         @default(3)
+  items                 String?     @default("[]")
+  seed                  String?
+  player                Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  answers               AnswerLog[]
+}
+
+model AnswerLog {
+  id           String   @id @default(uuid())
+  runId        String
+  problemId    String
+  topic        String
+  playerAnswer String
+  isCorrect    Boolean
+  timeSpentMs  Int?
+  createdAt    DateTime @default(now())
+  run          Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+}
