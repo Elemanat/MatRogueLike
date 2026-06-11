@@ -67,4 +67,5 @@ export interface PlayerStatsResponse {
         accuracyPercentage: number;
     };
     byTopic: Record<string, { total: number; correct: number }>;
+    towerBadges: Record<string, number>;
 }

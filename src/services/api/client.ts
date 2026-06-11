@@ -13,6 +13,8 @@ export interface RunsApi {
     startRun(request: RunStartRequest): Promise<RunStartResponse>;
 
     answer(request: RunAnswerRequest): Promise<RunAnswerResponse>;
+
+    finishRun(runId: string): Promise<{status: string}>;
 }
 
 export interface ProblemsApi {

@@ -1,6 +1,7 @@
-import {useCallback} from 'react';
+import {useCallback, useEffect} from 'react';
 import {useGameState} from './hooks/useGameState';
 import {Screen, ItemId} from './types/game';
+import {apiClient} from './services/api';
 import {HUD} from './components/HUD';
 import {CombatScreen} from './components/CombatScreen';
 import {EmptyRoomScreen} from './components/EmptyRoomScreen';
@@ -33,6 +34,15 @@ function App() {
     const handleAddTimeUsed = useCallback(() => {
         // Vizuální feedback je řešen v CombatScreen přes toast
     }, []);
+
+    // Když hráč dosáhne VICTORY, oznámenímu backendu
+    useEffect(() => {
+        if (state.currentScreen === Screen.VICTORY && state.runId) {
+            apiClient.runs.finishRun(state.runId).catch(err => {
+                console.error('Failed to mark run as finished:', err);
+            });
+        }
+    }, [state.currentScreen, state.runId]);
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2">
@@ -167,7 +177,7 @@ function App() {
                         <RewardScreen
                             item={state.rewardItem}
                             onTake={() => dispatch({type: 'TAKE_REWARD'})}
-                            onSkip={() => dispatch({type: 'TAKE_REWARD'})}
+                            onSkip={() => dispatch({type: 'SKIP_REWARD'})}
                         />
                     )}
 

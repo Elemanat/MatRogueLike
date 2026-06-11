@@ -63,6 +63,11 @@ export function createRealApiClient(config: ApiRuntimeConfig): ApiClient {
                     body: JSON.stringify(request),
                 });
             },
+            async finishRun(runId: string): Promise<{status: string}> {
+                return fetchJson<{status: string}>(baseUrl, config.timeoutMs, `/api/runs/${runId}/finish`, {
+                    method: 'POST',
+                });
+            },
         },
         problems: {
             async getNext(request: NextProblemRequest): Promise<NextProblemResponse> {

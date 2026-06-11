@@ -251,8 +251,14 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
         let totalAnswers = 0;
         let correctAnswers = 0;
         const topicStats: Record<string, { total: number, correct: number }> = {};
+        const towerBadges: Record<string, number> = {};
 
         player.runs.forEach(run => {
+            // Počítání odznaků - jeden odznak za každý VICTORY run
+            if (run.status === 'VICTORY') {
+                towerBadges[run.towerId] = (towerBadges[run.towerId] || 0) + 1;
+            }
+
             run.answers.forEach(ans => {
                 totalAnswers++;
                 if (ans.isCorrect) correctAnswers++;
@@ -275,7 +281,8 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
                 correctAnswers,
                 accuracyPercentage: totalAnswers === 0 ? 0 : Math.round((correctAnswers / totalAnswers) * 100)
             },
-            byTopic: topicStats
+            byTopic: topicStats,
+            towerBadges
         });
 
     } catch (error) {
@@ -314,6 +321,30 @@ app.get('/api/runs/active', async (req, res) => {
             currentProblemId: run.currentProblemId,
             currentProblemAnswers: run.currentProblemAnswers,
         });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "Internal server error"});
+    }
+});
+
+app.post('/api/runs/:runId/finish', async (req, res) => {
+    try {
+        const {runId} = req.params;
+
+        const run = await prisma.run.findUnique({where: {id: runId}});
+        if (!run) {
+            return res.status(404).json({error: "Run not found"});
+        }
+
+        await prisma.run.update({
+            where: {id: runId},
+            data: {
+                status: 'VICTORY',
+                finishedAt: new Date()
+            }
+        });
+
+        res.json({status: 'ok'});
     } catch (error) {
         console.error(error);
         res.status(500).json({error: "Internal server error"});

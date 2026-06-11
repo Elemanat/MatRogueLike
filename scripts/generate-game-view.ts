@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import {generateProblem} from '../src/services/api/problemGenerator';
+import {generateProblem} from '../backend/src/problemGenerator';
 
 const themes = [
     {id: 'divisibility-primes', name: 'Dělitelnost a prvočísla'},

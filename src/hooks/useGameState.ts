@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useReducer} from 'react';
+import {useEffect, useReducer} from 'react';
 import {Screen, RoomType, EnemyType, ItemId} from '../types/game';
 import type {GameState, Item, Tower, Enemy, Problem, PlayerStats, GameSettings} from '../types/game';
 import {ALL_ITEMS} from '../services/gameCatalog';
@@ -58,7 +58,6 @@ function resolveRewardItem(rewardItemId?: string): Item {
     return ALL_ITEMS.find(item => item.id === rewardItemId) ?? pick(ALL_ITEMS);
 }
 
-
 function makeEnemy(type: EnemyType): Enemy {
     if (type === EnemyType.BOSS) return {name: pick(ENEMIES_BOSS), type, maxHp: 5, hp: 5};
     if (type === EnemyType.MINIBOSS) return {name: pick(ENEMIES_MINIBOSS), type, maxHp: 3, hp: 3};
@@ -67,9 +66,9 @@ function makeEnemy(type: EnemyType): Enemy {
 
 /**
  * Určí typ příští místnosti:
- *  - poslední patro, poslední místnost → BOSS
- *  - poslední místnost v patře         → MINIBOSS
- *  - jinak náhodně EMPTY / CHEST / COMBAT (váhované)
+ * - poslední patro, poslední místnost → BOSS
+ * - poslední místnost v patře         → MINIBOSS
+ * - jinak náhodně EMPTY / CHEST / COMBAT (váhované)
  */
 function generateRoomType(room: number, roomsPerFloor: number, floor: number, floors: number): RoomType {
     const isLastFloor = floor === floors;
@@ -161,9 +160,10 @@ type Action =
     | { type: 'START_RUN'; runId?: string; playerId?: string; playerCode?: string; initialProblem?: Problem | null }
     | { type: 'CONTINUE' }
     | { type: 'ANSWER'; correct: boolean; answer?: string; result?: ResolvedRunAnswerResponse }
-    | { type: 'USE_ITEM'; itemId: ItemId }
+    | { type: 'USE_ITEM'; itemId: ItemId; newProblem?: Problem } // OPRAVENO: přidán newProblem
     | { type: 'PICK_CHEST_ITEM'; item: Item }
     | { type: 'TAKE_REWARD' }
+    | { type: 'SKIP_REWARD' }
     | { type: 'CLOSE_PEEK' }
     | { type: 'PEEK_REROLL' }
     | { type: 'RESTART_TO_INTRO' }
@@ -191,16 +191,16 @@ function advanceRoom(state: GameState): GameState {
         const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
             ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
             : null;
-         return {
-             ...state,
-             floor: nextFloor,
-             room: 1,
-             currentScreen: screen,
-             currentEnemy: enemy,
-             currentProblem: null,
-             peekNextRoom: null,
-             rewardItem: null,
-         };
+        return {
+            ...state,
+            floor: nextFloor,
+            room: 1,
+            currentScreen: screen,
+            currentEnemy: enemy,
+            currentProblem: state.currentProblem, // OPRAVENO: Zachováme existující problém
+            peekNextRoom: null,
+            rewardItem: null,
+        };
     }
 
     const rt = generateRoomType(nextRoom, tower.roomsPerFloor, state.floor, tower.floors);
@@ -208,15 +208,15 @@ function advanceRoom(state: GameState): GameState {
     const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
         ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
         : null;
-     return {
-         ...state,
-         room: nextRoom,
-         currentScreen: screen,
-         currentEnemy: enemy,
-         currentProblem: null,
-         peekNextRoom: null,
-         rewardItem: null,
-     };
+    return {
+        ...state,
+        room: nextRoom,
+        currentScreen: screen,
+        currentEnemy: enemy,
+        currentProblem: state.currentProblem, // OPRAVENO: Zachováme existující problém
+        peekNextRoom: null,
+        rewardItem: null,
+    };
 }
 
 function reducer(state: GameState, action: Action): GameState {
@@ -258,7 +258,7 @@ function reducer(state: GameState, action: Action): GameState {
                 playerId: action.playerId,
                 playerCode: action.playerCode,
                 playerName: action.playerName,
-                currentScreen: Screen.MENU,
+                currentScreen: Screen.PLAYER_CODE_DIALOG,
                 isLoading: false,
                 loginError: undefined,
             };
@@ -299,23 +299,23 @@ function reducer(state: GameState, action: Action): GameState {
             const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
                 ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
                 : null;
-             return {
-                 ...state,
-                 currentScreen: screen,
-                 playerHp: 3,
-                 playerMaxHp: 3,
-                 floor: 1,
-                 room: 1,
-                 inventory: [],
-                 currentEnemy: enemy,
-                 currentProblem: action.initialProblem ?? null,
-                 peekNextRoom: null,
-                 rewardItem: null,
-                 runStats: {...initialStats},
-                 runId: action.runId ?? null,
-                 playerId: action.playerId ?? null,
-                 playerCode: action.playerCode ?? null,
-             };
+            return {
+                ...state,
+                currentScreen: screen,
+                playerHp: 3,
+                playerMaxHp: 3,
+                floor: 1,
+                room: 1,
+                inventory: [],
+                currentEnemy: enemy,
+                currentProblem: action.initialProblem ?? null,
+                peekNextRoom: null,
+                rewardItem: null,
+                runStats: {...initialStats},
+                runId: action.runId ?? null,
+                playerId: action.playerId ?? null,
+                playerCode: action.playerCode ?? null,
+            };
         }
 
         case 'CONTINUE':
@@ -325,8 +325,8 @@ function reducer(state: GameState, action: Action): GameState {
             const tower = state.selectedTower;
             if (!tower || !state.currentEnemy) return state;
 
-             const apiState = action.result?.state;
-             const nextProblem = action.result?.nextProblem ?? null;
+            const apiState = action.result?.state;
+            const nextProblem = action.result?.nextProblem ?? null;
 
             if (action.correct) {
                 const enemy = state.currentEnemy;
@@ -370,23 +370,22 @@ function reducer(state: GameState, action: Action): GameState {
                     };
                 }
 
-                // ✅ Item se dává JENOM po minibossovi
                 if (apiState === 'FLOOR_COMPLETE' || enemy.type === EnemyType.MINIBOSS) {
                     const reward = resolveRewardItem(action.result?.rewardItemId);
                     return {
                         ...state,
                         currentScreen: Screen.REWARD,
                         currentEnemy: null,
-                        currentProblem: null,
+                        currentProblem: nextProblem, // OPRAVENO: Předáme vygenerovaný problém z API
                         runStats: runDefeatedStats,
                         sessionStats: sessionDefeatedStats,
                         rewardItem: reward,
                     };
                 }
 
-                // Normální enemy - bez rewárdu, přejdi na další screen
                 return advanceRoom({
                     ...state,
+                    currentProblem: nextProblem, // OPRAVENO: Předáme vygenerovaný problém z API do další místnosti
                     runStats: runDefeatedStats,
                     sessionStats: sessionDefeatedStats,
                 });
@@ -414,7 +413,6 @@ function reducer(state: GameState, action: Action): GameState {
                 currentProblem: nextProblem,
                 runStats,
                 sessionStats,
-                // Show dialog with wrong answer feedback
                 wrongAnswerDialog: {
                     prompt: state.currentProblem?.prompt || 'Příklad',
                     yourAnswer: action.answer || '?',
@@ -435,8 +433,13 @@ function reducer(state: GameState, action: Action): GameState {
         case 'CAMP_SCAVENGE': {
             // 50% šance na nalezení náhodného předmětu
             const foundItem = Math.random() < 0.5 ? resolveRewardItem() : null;
+
             if (foundItem) {
-                return advanceRoom({...state, inventory: [...state.inventory, foundItem]});
+                return {
+                    ...state,
+                    currentScreen: Screen.REWARD,
+                    rewardItem: foundItem
+                };
             }
             return advanceRoom(state);
         }
@@ -448,10 +451,13 @@ function reducer(state: GameState, action: Action): GameState {
             return advanceRoom(withReward);
         }
 
+        case 'SKIP_REWARD': {
+            return advanceRoom({...state, rewardItem: null});
+        }
+
         case 'USE_ITEM': {
             const tower = state.selectedTower!;
 
-            // Odstraň první item s daným id z inventáře
             const withoutOne = (id: ItemId): Item[] => {
                 let removed = false;
                 return state.inventory.filter(item => {
@@ -473,11 +479,10 @@ function reducer(state: GameState, action: Action): GameState {
                 case ItemId.CHANGE_PROB:
                     return {
                         ...state,
-                        currentProblem: null,
+                        currentProblem: action.newProblem || state.currentProblem, // OPRAVENO: Použije vygenerovaný problém
                         inventory: withoutOne(ItemId.CHANGE_PROB),
                     };
                 case ItemId.SKIP: {
-                    // Nelze přeskočit bosse ani minibosse
                     const e = state.currentEnemy;
                     if (e && (e.type === EnemyType.BOSS || e.type === EnemyType.MINIBOSS)) return state;
                     return advanceRoom({...state, inventory: withoutOne(ItemId.SKIP)});
@@ -487,7 +492,6 @@ function reducer(state: GameState, action: Action): GameState {
                     const nextFloor = state.room + 1 > tower.roomsPerFloor ? state.floor + 1 : state.floor;
                     const peeked = generateRoomType(nextRoomNum, tower.roomsPerFloor, nextFloor, tower.floors);
 
-                    // ✅ Miniboss a Boss se nemohou měnit (nesmí se rerollovat)
                     if (peeked === RoomType.MINIBOSS || peeked === RoomType.BOSS) {
                         return {
                             ...state,
@@ -503,7 +507,6 @@ function reducer(state: GameState, action: Action): GameState {
                     };
                 }
                 case ItemId.ADD_TIME:
-                    // Timer logika je v CombatScreen přes toast, zde jen odebereme item
                     return {...state, inventory: withoutOne(ItemId.ADD_TIME)};
                 default:
                     return state;
@@ -518,7 +521,6 @@ function reducer(state: GameState, action: Action): GameState {
 
         case 'PEEK_REROLL': {
             if (!state.peekNextRoom) return state;
-            // Nesmí se rerollovat MINIBOSS a BOSS
             if (state.peekNextRoom === RoomType.MINIBOSS || state.peekNextRoom === RoomType.BOSS) {
                 return state;
             }
@@ -572,7 +574,8 @@ function reducer(state: GameState, action: Action): GameState {
 export function useGameState() {
     const [state, dispatch] = useReducer(reducer, initialState, initState);
 
-    const startRun = useCallback(async () => {
+    // OPRAVENO: Odstraněn useCallback
+    const startRun = async () => {
         const tower = state.selectedTower;
         if (!tower) return;
 
@@ -585,7 +588,6 @@ export function useGameState() {
 
             console.log('[gameState.startRun] Got response:', response);
 
-            // Uložit playerId a playerCode do localStorage
             window.localStorage.setItem(STORAGE_KEY_PLAYER_ID, response.playerId);
             window.localStorage.setItem(STORAGE_KEY_PLAYER_CODE, response.playerCode);
 
@@ -600,9 +602,10 @@ export function useGameState() {
             console.error('[gameState.startRun] Error:', error);
             dispatch({type: 'START_RUN'});
         }
-    }, [state.playerName, state.selectedTower]);
+    };
 
-    const answer = useCallback(async (answerText: string, correct: boolean) => {
+    // OPRAVENO: Odstraněn useCallback
+    const answer = async (answerText: string, correct: boolean) => {
         const runId = state.runId;
         const problemId = state.currentProblem?.id;
 
@@ -634,9 +637,10 @@ export function useGameState() {
         } catch {
             dispatch({type: 'ANSWER', answer: answerText, correct});
         }
-    }, [state.currentProblem?.id, state.runId]);
+    };
 
-    const createNewPlayer = useCallback(async (playerName: string) => {
+    // OPRAVENO: Odstraněn useCallback
+    const createNewPlayer = async (playerName: string) => {
         try {
             const response = await apiClient.runs.startRun({
                 playerName,
@@ -658,9 +662,10 @@ export function useGameState() {
             console.error('[gameState.createNewPlayer] Error:', error);
             dispatch({type: 'TO_LOGIN'});
         }
-    }, []);
+    };
 
-    const loginByCode = useCallback(async (code: string) => {
+    // OPRAVENO: Odstraněn useCallback
+    const loginByCode = async (code: string) => {
         try {
             dispatch({type: 'TO_EXISTING_PLAYER_LOGIN'});
 
@@ -683,7 +688,39 @@ export function useGameState() {
                 error: 'Neplatný kód. Zkuste znovu.'
             });
         }
-    }, []);
+    };
+
+    // NOVÉ: Asynchronní volání pro použití předmětů (např. Záměna)
+    const useItem = async (itemId: ItemId) => {
+        if (itemId === ItemId.CHANGE_PROB) {
+            const towerId = state.selectedTower?.id;
+            if (!towerId) return;
+
+            try {
+                // Připravíme parametry pro backend
+                const params = new URLSearchParams({
+                    towerId,
+                    floor: state.floor.toString(),
+                    enemyType: state.currentEnemy?.type || 'NORMAL'
+                });
+
+                // Můžeš to přepsat na apiClient.problems.next() pokud to tam už máš nachystané
+                const res = await fetch(`http://localhost:3001/api/problems/next?${params}`);
+                const data = await res.json();
+
+                dispatch({
+                    type: 'USE_ITEM',
+                    itemId,
+                    newProblem: mapProblemDtoToProblem(data.problem)
+                });
+            } catch (error) {
+                console.error('Nepodařilo se vyměnit příklad:', error);
+            }
+        } else {
+            // Ostatní itemy komunikaci s backendem nepotřebují
+            dispatch({ type: 'USE_ITEM', itemId });
+        }
+    };
 
     useEffect(() => {
         try {
@@ -693,9 +730,9 @@ export function useGameState() {
             if (state.playerId) window.localStorage.setItem(STORAGE_KEY_PLAYER_ID, state.playerId);
             if (state.playerCode) window.localStorage.setItem(STORAGE_KEY_PLAYER_CODE, state.playerCode);
         } catch {
-            // Ignore quota/privacy errors; game should remain playable without persistence.
+            // Ignore quota/privacy errors
         }
     }, [state.sessionStats, state.settings, state.playerName, state.playerId, state.playerCode]);
 
-    return {state, dispatch, actions: {startRun, answer, createNewPlayer, loginByCode}};
+    return {state, dispatch, actions: {startRun, answer, createNewPlayer, loginByCode, useItem}};
 }
