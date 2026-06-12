@@ -432,7 +432,7 @@ function reducer(state: GameState, action: Action): GameState {
 
         case 'CAMP_SCAVENGE': {
             // 50% šance na nalezení náhodného předmětu
-            const foundItem = Math.random() < 0.5 ? resolveRewardItem() : null;
+            const foundItem = Math.random() < 0.25 ? resolveRewardItem() : null;
 
             if (foundItem) {
                 return {
@@ -701,7 +701,11 @@ export function useGameState() {
                 const params = new URLSearchParams({
                     towerId,
                     floor: state.floor.toString(),
-                    enemyType: state.currentEnemy?.type || 'NORMAL'
+                    enemyType: state.currentEnemy?.type || 'NORMAL',
+                    // Přidáme aktuální čas jako timestamp (obejde cache prohlížeče)
+                    _t: Date.now().toString(),
+                    // A přidáme flag, že jde o reroll, pro tvůj backend
+                    reroll: 'true'
                 });
 
                 // Můžeš to přepsat na apiClient.problems.next() pokud to tam už máš nachystané
@@ -718,7 +722,7 @@ export function useGameState() {
             }
         } else {
             // Ostatní itemy komunikaci s backendem nepotřebují
-            dispatch({ type: 'USE_ITEM', itemId });
+            dispatch({type: 'USE_ITEM', itemId});
         }
     };
 

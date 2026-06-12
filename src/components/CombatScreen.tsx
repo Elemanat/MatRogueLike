@@ -102,7 +102,7 @@ export const CombatScreen: React.FC<Props> = ({
         // Vezmeme první správnou odpověď z pole a připojíme špatné odpovědi
         const all = [problem.correctAnswers[0], ...problem.wrongAnswers];
         return shuffleArray(all);
-    }, [problem.id, problem.correctAnswers, problem.wrongAnswers]);
+    }, [problem]);
 
     // ADD_TIME: sleduj použití itemu a zobraz toast
     const handleUseItem = useCallback((id: Item['id']) => {
@@ -113,10 +113,17 @@ export const CombatScreen: React.FC<Props> = ({
             onAddTimeUsed();
             setShowTimeToast(true);
             setTimeout(() => setShowTimeToast(false), 2000);
+        } else if (id === ItemId.CHANGE_PROB) {
+            // Když použijeme záměnu, musíme nejen říct ven, ať to sežene nový,
+            // ale musíme i zresetovat náš bojový formulář a časovač.
+            onUseItem(id);
+            setHasAnswered(false);
+            setTimeLeft(roundTimeSeconds);
+            setTimeCap(roundTimeSeconds);
         } else {
             onUseItem(id);
         }
-    }, [onUseItem, onAddTimeUsed]);
+    }, [onUseItem, onAddTimeUsed, roundTimeSeconds]);
 
     const enemyColor = enemy.type === EnemyType.BOSS
         ? 'var(--gold)'

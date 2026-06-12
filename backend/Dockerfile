@@ -26,8 +26,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Nainstalujeme dumb-init (pro čisté vypínání Node.js) a netcat (pro tvůj entrypoint skript)
-RUN apk add --no-cache dumb-init netcat-openbsd
-
+RUN apk add --no-cache dumb-init netcat-openbsd openssl
 # Zkopírujeme package.json pro produkční instalaci
 COPY package*.json ./
 
