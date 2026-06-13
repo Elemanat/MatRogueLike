@@ -1,5 +1,5 @@
-import {generateProblems, validateProblem} from '../src/services/api/problemGenerator';
-import type {ProblemGenerationRequest} from '../src/services/api/problemGenerator.ts';
+import {generateProblems, validateProblem} from '../backend/src/problemGenerator';
+import type {ProblemGenerationRequest} from '../backend/src/problemGenerator';
 
 const THEMES = [
     'divisibility-primes',
@@ -23,7 +23,8 @@ interface Summary {
     for (const theme of THEMES) {
         overall[theme] = {total: 0, invalid: 0, issues: {}};
         for (const floor of floors) {
-            const req: ProblemGenerationRequest = {towerId: theme, floor, enemyType: 'NORMAL'};
+            // Přidán dummy nodeId (generateProblems si ho uvnitř pro iterace stejně přepíše)
+            const req: ProblemGenerationRequest = {towerId: theme, floor, enemyType: 'NORMAL', nodeId: 'validation-gen'};
             const problems = generateProblems(req, SAMPLE_COUNT);
             for (const p of problems) {
                 overall[theme].total += 1;
@@ -46,4 +47,3 @@ interface Summary {
         }
     }
 })();
-

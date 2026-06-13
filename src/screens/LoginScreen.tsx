@@ -1,18 +1,11 @@
-import React, {useState} from 'react';
+import React from 'react';
 
 interface Props {
-    onEnter: (name: string) => void;
+    onNewPlayer: () => void;
+    onExistingPlayer: () => void;
 }
 
-export const LoginScreen: React.FC<Props> = ({onEnter}) => {
-    const [name, setName] = useState('');
-
-    const handleStart = () => {
-        if (name.trim()) {
-            onEnter(name.trim());
-        }
-    };
-
+export const LoginScreen: React.FC<Props> = ({onNewPlayer, onExistingPlayer}) => {
     return (
         <div className="flex flex-col items-center justify-center h-full gap-8 px-6">
             <h1 className="text-6xl font-bold" style={{color: 'var(--ink)'}}>VěžMat</h1>
@@ -20,28 +13,20 @@ export const LoginScreen: React.FC<Props> = ({onEnter}) => {
                 Matematická věž čeká na svého hrdinu…
             </p>
 
-            <div className="w-full flex flex-col gap-3">
-                <label className="text-lg font-semibold" style={{color: 'var(--ink)'}}>
-                    Tvoje jméno:
-                </label>
-                <input
-                    className="w-full px-3 py-2 text-xl sketch-box outline-none"
-                    style={{fontFamily: 'Caveat, cursive', background: 'var(--paper)', color: 'var(--ink)'}}
-                    placeholder="Napiš své jméno…"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleStart()}
-                    maxLength={20}
-                />
+            <div className="w-full flex flex-col gap-4">
+                <button
+                    className="sketch-btn sketch-btn-primary text-2xl py-3 w-full"
+                    onClick={onNewPlayer}
+                >
+                    ✨ Nový hráč
+                </button>
+                <button
+                    className="sketch-btn text-2xl py-3 w-full"
+                    onClick={onExistingPlayer}
+                >
+                    🔑 Mám kód
+                </button>
             </div>
-
-            <button
-                className="sketch-btn sketch-btn-primary w-full text-2xl py-2 disabled:opacity-40 transition-opacity"
-                disabled={!name.trim()}
-                onClick={handleStart}
-            >
-                Vstoupit →
-            </button>
         </div>
     );
 };

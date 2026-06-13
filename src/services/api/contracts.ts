@@ -7,6 +7,17 @@ export interface ApiProblemDto {
     difficulty: number;
 }
 
+export interface RegisterNewPlayerRequest {
+    playerName: string;
+    secretAnimal: string;
+}
+
+export interface RegisterNewPlayerResponse {
+    playerId: string;
+    playerCode: string;
+    playerName: string;
+}
+
 export interface RunStartRequest {
     playerName: string;
     towerId: string;
@@ -14,8 +25,28 @@ export interface RunStartRequest {
 
 export interface RunStartResponse {
     runId: string;
+    playerId: string;
+    playerCode: string;
     startedAt: string;
+    seed?: string;     // Přidáno
+    hp?: number;       // Přidáno
+    maxHp?: number;    // Přidáno
     initialProblem?: ApiProblemDto;
+}
+
+export interface RecoverCodeRequest {
+    playerName: string;
+    secretAnimal: string;
+}
+
+export interface RecoverCodeResponse {
+    playerCode: string;
+}
+
+export interface LoginByCodeResponse {
+    playerId: string;
+    playerCode: string;
+    playerName: string;
 }
 
 export interface RunAnswerRequest {
@@ -23,6 +54,9 @@ export interface RunAnswerRequest {
     problemId: string;
     answer: string;
     correctAnswers?: string[];
+    floor?: number;
+    room?: number;
+    items?: string;
 }
 
 export type RunAnswerState = 'CONTINUE' | 'ENEMY_DEFEATED' | 'FLOOR_COMPLETE' | 'GAME_OVER' | 'VICTORY';
@@ -53,4 +87,5 @@ export interface PlayerStatsResponse {
         accuracyPercentage: number;
     };
     byTopic: Record<string, { total: number; correct: number }>;
+    towerBadges: Record<string, number>;
 }

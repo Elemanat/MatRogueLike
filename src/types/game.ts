@@ -1,5 +1,8 @@
 export const Screen = {
     LOGIN: 'LOGIN',
+    NEW_PLAYER: 'NEW_PLAYER',
+    PLAYER_CODE_DIALOG: 'PLAYER_CODE_DIALOG',
+    EXISTING_PLAYER_LOGIN: 'EXISTING_PLAYER_LOGIN',
     MENU: 'MENU',
     TOWER_SELECT: 'TOWER_SELECT',
     INTRO: 'INTRO',
@@ -51,6 +54,7 @@ export interface Item {
     id: ItemId;
     name: string;
     description: string;
+    icon?: string;
 }
 
 export interface Problem {
@@ -86,6 +90,8 @@ export interface GameSettings {
 export interface GameState {
     currentScreen: Screen;
     runId: string | null;
+    playerId: string | null;
+    playerCode: string | null;
     playerName: string;
     playerHp: number;
     playerMaxHp: number;
@@ -96,9 +102,13 @@ export interface GameState {
     currentProblem: Problem | null;
     selectedTower: Tower | null;
     peekNextRoom: RoomType | null;
+    hasRerolledPeek: boolean;
     rewardItem: Item | null;
     runStats: PlayerStats;
     sessionStats: PlayerStats;
     settings: GameSettings;
     wrongAnswerDialog: { prompt: string; yourAnswer: string; correctAnswers: string[] } | null;
+    showRecoverCodeDialog?: boolean;
+    isLoading?: boolean;
+    loginError?: string;
 }

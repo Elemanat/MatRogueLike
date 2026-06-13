@@ -1,5 +1,6 @@
 import * as fs from 'fs';
-import {generateProblem} from '../src/services/api/problemGenerator';
+import {generateProblem} from '../backend/src/problemGenerator';
+import type {ProblemGenerationRequest} from '../backend/src/problemGenerator';
 
 const themes = [
     {id: 'divisibility-primes', name: 'Dělitelnost a prvočísla'},
@@ -29,12 +30,15 @@ for (const theme of themes) {
 
         // Vygenerujeme 10 příkladů pro každou obtížnost
         for (let i = 0; i < 10; i++) {
-            const problem = generateProblem({
+            const req: ProblemGenerationRequest = {
                 towerId: theme.id,
                 floor: floor,
                 enemyType: 'NORMAL',
+                nodeId: `game-view-node-${i}`, // Doplněno chybějící nodeId
                 seed: `game-view-demo-${theme.id}-${floor}-sample-${i}`
-            });
+            };
+
+            const problem = generateProblem(req);
 
             const correct = problem.correctAnswers[0];
             // Vezmeme správnou a jen 2 špatné (aby to bylo A, B, C)
@@ -47,7 +51,7 @@ for (const theme of themes) {
             let correctLetter = '';
 
             options.forEach((opt, idx) => {
-                md += `*   **${letterMap[idx]})** ${opt}\n`;
+                md += `* **${letterMap[idx]})** ${opt}\n`;
                 if (opt === correct) {
                     correctLetter = letterMap[idx];
                 }

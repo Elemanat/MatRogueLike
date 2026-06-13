@@ -1,6 +1,6 @@
 import React, {useMemo, useState, useCallback, useEffect} from 'react';
-import type {Problem, Item, Enemy, RoomType} from '../types/game';
-import {EnemyType, ItemId} from '../types/game';
+import type {Problem, Item, Enemy} from '../types/game';
+import {EnemyType, ItemId, RoomType} from '../types/game';
 import {ItemBar} from './ItemBar';
 import {HealthBar} from './HealthBar';
 
@@ -51,6 +51,7 @@ interface Props {
     playerMaxHp: number;
     inventory: Item[];
     peekNextRoom: RoomType | null;
+    hasRerolledPeek: boolean;
     roundTimeSeconds: number;
     reducedMotion: boolean;
     showWrongAnswerDialog?: boolean;
@@ -66,6 +67,7 @@ export const CombatScreen: React.FC<Props> = ({
                                                   problem,
                                                   inventory,
                                                   peekNextRoom,
+                                                  hasRerolledPeek,
                                                   roundTimeSeconds,
                                                   reducedMotion,
                                                   showWrongAnswerDialog,
@@ -83,10 +85,13 @@ export const CombatScreen: React.FC<Props> = ({
     useEffect(() => {
         if (peekNextRoom) return;
         if (hasAnswered) return;
-        if (showWrongAnswerDialog) return; // Freeze timer when dialog is showing
+        if (showWrongAnswerDialog) return;
+
         if (timeLeft <= 0) {
-            setHasAnswered(true);
-            onAnswer('', false);
+            setTimeout(() => {
+                setHasAnswered(true);
+                onAnswer('', false);
+            }, 0);
             return;
         }
 
@@ -102,7 +107,7 @@ export const CombatScreen: React.FC<Props> = ({
         // Vezmeme první správnou odpověď z pole a připojíme špatné odpovědi
         const all = [problem.correctAnswers[0], ...problem.wrongAnswers];
         return shuffleArray(all);
-    }, [problem.id, problem.correctAnswers, problem.wrongAnswers]);
+    }, [problem]);
 
     // ADD_TIME: sleduj použití itemu a zobraz toast
     const handleUseItem = useCallback((id: Item['id']) => {
@@ -113,10 +118,17 @@ export const CombatScreen: React.FC<Props> = ({
             onAddTimeUsed();
             setShowTimeToast(true);
             setTimeout(() => setShowTimeToast(false), 2000);
+        } else if (id === ItemId.CHANGE_PROB) {
+            // Když použijeme záměnu, musíme nejen říct ven, ať to sežene nový,
+            // ale musíme i zresetovat náš bojový formulář a časovač.
+            onUseItem(id);
+            setHasAnswered(false);
+            setTimeLeft(roundTimeSeconds);
+            setTimeCap(roundTimeSeconds);
         } else {
             onUseItem(id);
         }
-    }, [onUseItem, onAddTimeUsed]);
+    }, [onUseItem, onAddTimeUsed, roundTimeSeconds]);
 
     const enemyColor = enemy.type === EnemyType.BOSS
         ? 'var(--gold)'
@@ -167,9 +179,12 @@ export const CombatScreen: React.FC<Props> = ({
                         <p className="text-3xl font-bold text-center">{ROOM_TYPE_LABEL[peekNextRoom]}</p>
                         <div className="flex gap-3 w-full flex-col">
                             <button className="sketch-btn text-lg" onClick={onClosePeek}>✓ V pořádku</button>
-                            <button className="sketch-btn sketch-btn-warning text-lg"
-                                    onClick={onPeekSkip}>🔄 Změnit místnost
-                            </button>
+
+                            {!hasRerolledPeek && peekNextRoom !== RoomType.MINIBOSS && peekNextRoom !== RoomType.BOSS && (
+                                <button className="sketch-btn sketch-btn-warning text-lg" onClick={onPeekSkip}>
+                                    🔄 Změnit místnost
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

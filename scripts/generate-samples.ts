@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import {generateProblems, validateProblem} from '../src/services/api/problemGenerator';
-import type {ProblemGenerationRequest} from '../src/services/api/problemGenerator';
+import {generateProblems, validateProblem} from '../backend/src/problemGenerator';
+import type {ProblemGenerationRequest} from '../backend/src/problemGenerator';
 
 const THEMES = [
     'divisibility-primes',
@@ -21,7 +21,7 @@ for (const theme of THEMES) {
     md += `## Téma: ${theme}\n\n`;
     for (const floor of floors) {
         md += `### Obtížnost (floor=${floor})\n\n`;
-        const request: ProblemGenerationRequest = {towerId: theme, floor, enemyType: 'NORMAL'};
+        const request: ProblemGenerationRequest = {towerId: theme, floor, enemyType: 'NORMAL', nodeId: 'sample-gen'};
         const problems = generateProblems(request, 20);
         let idx = 1;
         for (const p of problems) {

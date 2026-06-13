@@ -7,6 +7,11 @@ import type {
     RunStartRequest,
     RunStartResponse,
     PlayerStatsResponse,
+    LoginByCodeResponse,
+    RecoverCodeRequest,
+    RecoverCodeResponse,
+    RegisterNewPlayerRequest,
+    RegisterNewPlayerResponse,
 } from './contracts';
 import type {ApiRuntimeConfig} from './config';
 
@@ -62,6 +67,11 @@ export function createRealApiClient(config: ApiRuntimeConfig): ApiClient {
                     body: JSON.stringify(request),
                 });
             },
+            async finishRun(runId: string): Promise<{status: string}> {
+                return fetchJson<{status: string}>(baseUrl, config.timeoutMs, `/api/runs/${runId}/finish`, {
+                    method: 'POST',
+                });
+            },
         },
         problems: {
             async getNext(request: NextProblemRequest): Promise<NextProblemResponse> {
@@ -80,6 +90,24 @@ export function createRealApiClient(config: ApiRuntimeConfig): ApiClient {
             async getStats(playerName: string): Promise<PlayerStatsResponse> {
                 return fetchJson<PlayerStatsResponse>(baseUrl, config.timeoutMs, `/api/players/${encodeURIComponent(playerName)}/stats`, {
                     method: 'GET',
+                });
+            },
+            async loginByCode(code: string): Promise<LoginByCodeResponse> {
+                return fetchJson<LoginByCodeResponse>(baseUrl, config.timeoutMs, '/api/players/login-by-code', {
+                    method: 'POST',
+                    body: JSON.stringify({code}),
+                });
+            },
+            async registerNewPlayer(request: RegisterNewPlayerRequest): Promise<RegisterNewPlayerResponse> {
+                return fetchJson<RegisterNewPlayerResponse>(baseUrl, config.timeoutMs, '/api/players/register', {
+                    method: 'POST',
+                    body: JSON.stringify(request),
+                });
+            },
+            async recoverCode(request: RecoverCodeRequest): Promise<RecoverCodeResponse> {
+                return fetchJson<RecoverCodeResponse>(baseUrl, config.timeoutMs, '/api/players/recover', {
+                    method: 'POST',
+                    body: JSON.stringify(request),
                 });
             },
         },

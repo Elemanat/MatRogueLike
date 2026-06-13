@@ -18,8 +18,69 @@ const prisma = new PrismaClient({
     log: ['error', 'warn'],
 });
 
+function generatePlayerCode(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
 app.use(cors());
 app.use(express.json());
+
+// ── Health checks ──────────────────────────────────────────────────────────
+
+app.get('/api/health', (_req, res) => {
+    res.json({status: 'ok'});
+});
+
+app.get('/api/ready', async (_req, res) => {
+    try {
+        await prisma.$queryRaw`SELECT 1`;
+        res.json({status: 'ready'});
+    } catch (error) {
+        console.error('Readiness check failed:', error);
+        res.status(503).json({status: 'not ready', error: 'Database connection failed'});
+    }
+});
+
+// ── API Routes ─────────────────────────────────────────────────────────────
+
+app.post('/api/players/register', async (req, res) => {
+    try {
+        const {playerName, secretAnimal} = req.body;
+
+        if (!playerName || !secretAnimal) {
+            return res.status(400).json({error: "playerName and secretAnimal are required"});
+        }
+
+        const existingPlayer = await prisma.player.findUnique({where: {name: playerName}});
+        if (existingPlayer) {
+            return res.status(409).json({error: "Toto jméno už někdo používá. Zvol si jiné."});
+        }
+
+        const newPlayer = await prisma.player.create({
+            data: {
+                name: playerName,
+                code: generatePlayerCode(),
+                secretAnimal: secretAnimal
+            }
+        });
+
+        console.log(`[Backend] Zaregistrován nový hráč: ${newPlayer.name} se zvířetem ${newPlayer.secretAnimal}`);
+
+        res.json({
+            playerId: newPlayer.id,
+            playerCode: newPlayer.code,
+            playerName: newPlayer.name
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "Internal server error"});
+    }
+});
 
 app.post('/api/runs/start', async (req, res) => {
     try {
@@ -28,15 +89,17 @@ app.post('/api/runs/start', async (req, res) => {
 
         let player = await prisma.player.findUnique({where: {name: playerName}});
         if (!player) {
-            player = await prisma.player.create({data: {name: playerName}});
+            player = await prisma.player.create({data: {name: playerName, code: generatePlayerCode(), secretAnimal: '🐶'}});
         }
 
         const seed = `${playerName}-${Date.now()}`;
+        const nodeId = `start-${playerName}-${Date.now()}`;
 
         const initialProblem = generateProblem({
             towerId,
             floor: 1,
             enemyType: 'NORMAL',
+            nodeId,
             seed
         });
 
@@ -54,6 +117,8 @@ app.post('/api/runs/start', async (req, res) => {
 
         res.json({
             runId: run.id,
+            playerId: player.id,
+            playerCode: player.code,
             startedAt: run.startedAt,
             seed: run.seed,
             hp: run.hp,
@@ -68,7 +133,16 @@ app.post('/api/runs/start', async (req, res) => {
 
 app.post('/api/runs/answer', async (req, res) => {
     try {
-        const {runId, problemId, answer, timeSpentMs, correctAnswers} = req.body as RunAnswerRequest;
+        const {
+            runId,
+            problemId,
+            answer,
+            timeSpentMs,
+            correctAnswers,
+            floor,
+            room,
+            items
+        } = req.body as RunAnswerRequest;
 
         console.log(`\n========================================`);
         console.log(`🔍 [ANSWER CHECK]`);
@@ -86,12 +160,10 @@ app.post('/api/runs/answer', async (req, res) => {
         let isCorrect = false;
         const topic = run.towerId;
 
-        // ✅ Kontroluj odpověď proti correctAnswers od frontendu
         if (correctAnswers && correctAnswers.length > 0) {
             console.log(`   Using frontend answers`);
             isCorrect = correctAnswers.some(correct => isEquivalentAnswer(answer, correct));
         } else if (run.currentProblemAnswers) {
-            // Fallback - pokud frontend neodesílá correctAnswers (zpětná kompatibilita)
             console.log(`   Fallback: Using DB answers`);
             const answers: string[] = JSON.parse(run.currentProblemAnswers);
             isCorrect = answers.some(correct => isEquivalentAnswer(answer, correct));
@@ -107,7 +179,7 @@ app.post('/api/runs/answer', async (req, res) => {
                 topic: topic,
                 playerAnswer: answer,
                 isCorrect: isCorrect,
-                timeSpentMs: timeSpentMs
+                timeSpentMs: timeSpentMs ?? null
             }
         });
 
@@ -130,6 +202,7 @@ app.post('/api/runs/answer', async (req, res) => {
                 towerId: run.towerId,
                 floor: run.floor,
                 enemyType: 'NORMAL',
+                nodeId: `${run.id}:${Date.now()}`,
                 seed: `${problemId}:next:${Date.now()}`
             });
         }
@@ -141,6 +214,9 @@ app.post('/api/runs/answer', async (req, res) => {
                 currentProblemAnswers: nextProblem ? JSON.stringify(nextProblem.correctAnswers) : null,
                 score: newScore,
                 hp: newHp,
+                floor: floor ?? run.floor,
+                room: room ?? run.room,
+                items: items ?? run.items,
                 status: state === 'GAME_OVER' ? 'GAME_OVER' : run.status,
                 finishedAt: state === 'GAME_OVER' ? new Date() : null
             }
@@ -153,6 +229,63 @@ app.post('/api/runs/answer', async (req, res) => {
             currentScore: newScore,
             nextProblem,
             rewardItemId: isCorrect ? (Math.random() > 0.8 ? "ADD_TIME" : undefined) : undefined
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "Internal server error"});
+    }
+});
+
+app.post('/api/players/login-by-code', async (req, res) => {
+    try {
+        const {code} = req.body;
+
+        if (!code) {
+            return res.status(400).json({error: "Code is required"});
+        }
+
+        const player = await prisma.player.findUnique({
+            where: {code}
+        });
+
+        if (!player) {
+            return res.status(404).json({error: "Player not found"});
+        }
+
+        res.json({
+            playerId: player.id,
+            playerCode: player.code,
+            playerName: player.name
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "Internal server error"});
+    }
+});
+
+// ZDE JE TVOJE ZVÍŘÁTKO PRO OBNOVU KÓDU!
+app.post('/api/players/recover', async (req, res) => {
+    try {
+        const {playerName, secretAnimal} = req.body;
+
+        if (!playerName || !secretAnimal) {
+            return res.status(400).json({error: "playerName and secretAnimal are required"});
+        }
+
+        const player = await prisma.player.findUnique({
+            where: {name: playerName}
+        });
+
+        if (!player) {
+            return res.status(404).json({error: "Hráč nenalezen. Neudělal jsi vespokojenosti překlep?"});
+        }
+
+        if (player.secretAnimal !== secretAnimal) {
+            return res.status(401).json({error: "Špatné zvířátko. Zkus znovu."});
+        }
+
+        res.json({
+            playerCode: player.code
         });
     } catch (error) {
         console.error(error);
@@ -183,8 +316,13 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
         let totalAnswers = 0;
         let correctAnswers = 0;
         const topicStats: Record<string, { total: number, correct: number }> = {};
+        const towerBadges: Record<string, number> = {};
 
         player.runs.forEach(run => {
+            if (run.status === 'VICTORY') {
+                towerBadges[run.towerId] = (towerBadges[run.towerId] || 0) + 1;
+            }
+
             run.answers.forEach(ans => {
                 totalAnswers++;
                 if (ans.isCorrect) correctAnswers++;
@@ -207,9 +345,70 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
                 correctAnswers,
                 accuracyPercentage: totalAnswers === 0 ? 0 : Math.round((correctAnswers / totalAnswers) * 100)
             },
-            byTopic: topicStats
+            byTopic: topicStats,
+            towerBadges
         });
 
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "Internal server error"});
+    }
+});
+
+app.get('/api/runs/active', async (req, res) => {
+    try {
+        const playerId = req.query.playerId as string;
+        if (!playerId) {
+            return res.status(400).json({error: "playerId is required"});
+        }
+
+        const run = await prisma.run.findFirst({
+            where: {
+                playerId,
+                status: 'IN_PROGRESS'
+            }
+        });
+
+        if (!run) {
+            return res.status(404).json({error: "No active run found"});
+        }
+
+        res.json({
+            runId: run.id,
+            towerId: run.towerId,
+            floor: run.floor,
+            room: run.room,
+            hp: run.hp,
+            maxHp: run.maxHp,
+            score: run.score,
+            items: run.items,
+            currentProblemId: run.currentProblemId,
+            currentProblemAnswers: run.currentProblemAnswers,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "Internal server error"});
+    }
+});
+
+app.post('/api/runs/:runId/finish', async (req, res) => {
+    try {
+        const {runId} = req.params;
+
+        const run = await prisma.run.findUnique({where: {id: runId}});
+        if (!run) {
+            return res.status(404).json({error: "Run not found"});
+        }
+
+        await prisma.run.update({
+            where: {id: runId},
+            data: {
+                status: 'VICTORY',
+                finishedAt: new Date()
+            }
+        });
+
+        res.json({status: 'ok'});
     } catch (error) {
         console.error(error);
         res.status(500).json({error: "Internal server error"});
@@ -228,18 +427,18 @@ app.get('/api/problems/next', (req, res) => {
             towerId,
             floor,
             enemyType,
-            // Přidáme time-based seed, aby se příklady neopakovaly
+            nodeId: `api-${Date.now()}-${Math.random()}`,
             seed: `${towerId}:${floor}:${enemyType}:${Date.now()}`
         });
 
-        res.json({ problem });
+        res.json({problem});
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({error: "Internal server error"});
     }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`\n========================================`);
     console.log(`🚀 BACKEND SPUŠTĚN! 🚀`);
     console.log(`Kuchyně VěžMatu je otevřená!`);
@@ -248,8 +447,21 @@ app.listen(PORT, () => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', async () => {
-    console.log('\n[Backend] Shutting down...');
-    await prisma.$disconnect();
-    process.exit(0);
-});
+async function gracefulShutdown(signal: string) {
+    console.log(`\n[Backend] Received ${signal}, shutting down gracefully...`);
+
+    server.close(async () => {
+        console.log('[Backend] HTTP server closed');
+        await prisma.$disconnect();
+        console.log('[Backend] Database disconnected');
+        process.exit(0);
+    });
+
+    setTimeout(() => {
+        console.error('[Backend] Forced shutdown after 30s timeout');
+        process.exit(1);
+    }, 30000);
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

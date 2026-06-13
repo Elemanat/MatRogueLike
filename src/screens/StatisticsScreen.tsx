@@ -1,11 +1,27 @@
 import React, {useEffect, useState} from 'react';
 import {apiClient} from '../services/api';
+import {TOWERS} from '../services/gameCatalog';
 import type {PlayerStatsResponse} from '../services/api/contracts';
 
 interface Props {
     playerName: string;
     onBack: () => void;
 }
+
+const getTowerName = (towerId: string): string => {
+    return TOWERS.find(t => t.id === towerId)?.name || towerId;
+};
+
+// Deterministické emoji pro každou věž (hash-based)
+const getTowerBadgeEmoji = (towerId: string): string => {
+    const emojis = ['🎖️', '⭐', '🏆', '🥇', '💎', '🌟', '✨', '🎯', '🔥', '⚡'];
+    let hash = 0;
+    for (let i = 0; i < towerId.length; i++) {
+        hash = ((hash << 5) - hash) + towerId.charCodeAt(i);
+        hash = hash & hash;
+    }
+    return emojis[Math.abs(hash) % emojis.length];
+};
 
 export const StatisticsScreen: React.FC<Props> = ({playerName, onBack}) => {
     const [stats, setStats] = useState<PlayerStatsResponse | null>(null);
@@ -53,6 +69,8 @@ export const StatisticsScreen: React.FC<Props> = ({playerName, onBack}) => {
         );
     }
 
+    const totalBadges = Object.values(stats.towerBadges || {}).reduce((sum, count) => sum + count, 0);
+
     return (
         <div className="flex flex-col h-full px-4 py-6 gap-4 overflow-y-auto">
             <h2 className="text-3xl font-bold text-center text-[var(--ink)]">Záznamy hrdiny</h2>
@@ -75,20 +93,36 @@ export const StatisticsScreen: React.FC<Props> = ({playerName, onBack}) => {
 
             {Object.keys(stats.byTopic).length > 0 && (
                 <div className="flex flex-col gap-3 mt-6">
-                    <h3 className="text-xl font-bold underline mb-2 text-[var(--ink)]">Úspěšnost roztříděná dle
-                        věží</h3>
+                    <h3 className="text-xl font-bold underline mb-2 text-[var(--ink)]">Úspěšnost dle věží</h3>
                     {Object.entries(stats.byTopic).map(([topic, data]) => {
                         const acc = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+                        const badgeCount = stats.towerBadges?.[topic] || 0;
                         return (
-                            <div key={topic} className="sketch-box-light px-4 py-2 flex justify-between items-center">
-                                <span className="text-lg font-mono text-[var(--ink)]">{topic}</span>
-                                <span
-                                    className={`text-xl font-bold ${acc >= 80 ? 'text-[var(--green)]' : acc < 50 ? 'text-[var(--red)]' : 'text-orange-500'}`}>
-                  {acc} % <span className="text-sm font-normal text-[var(--ink-light)]">({data.correct}/{data.total})</span>
-                </span>
+                            <div key={topic} className="sketch-box-light px-4 py-2 flex justify-between items-center gap-3">
+                                <div className="flex-1">
+                                    <span className="text-lg text-[var(--ink)]">{getTowerName(topic)}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span
+                                        className={`text-xl font-bold ${acc >= 80 ? 'text-[var(--green)]' : acc < 50 ? 'text-[var(--red)]' : 'text-orange-500'}`}>
+                        {acc} % <span className="text-sm font-normal text-[var(--ink-light)]">({data.correct}/{data.total})</span>
+                      </span>
+                                    <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 rounded border border-yellow-400">
+                                        <span className="text-lg">{getTowerBadgeEmoji(topic)}</span>
+                                        <span className="text-sm font-bold text-[var(--ink)]">{badgeCount}</span>
+                                    </div>
+                                </div>
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {totalBadges > 0 && (
+                <div className="sketch-box-light px-4 py-3 mt-4 flex items-center justify-center gap-2 bg-yellow-50">
+                    <span className="text-2xl">📊</span>
+                    <span className="text-lg font-bold text-[var(--ink)]">Celkem odznaků:</span>
+                    <span className="text-2xl font-bold text-[var(--ink)]">{totalBadges}</span>
                 </div>
             )}
 

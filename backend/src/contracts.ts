@@ -14,10 +14,12 @@ export interface RunStartRequest {
 
 export interface RunStartResponse {
     runId: string;
+    playerId: string;
+    playerCode: string;
     startedAt: string;
-    seed: string;
-    hp: number;
-    maxHp: number;
+    seed?: string;     // Přidáno
+    hp?: number;       // Přidáno
+    maxHp?: number;    // Přidáno
     initialProblem?: ApiProblemDto;
 }
 
@@ -27,6 +29,9 @@ export interface RunAnswerRequest {
     answer: string;
     timeSpentMs?: number;
     correctAnswers?: string[];
+    floor?: number;
+    room?: number;
+    items?: string;
 }
 
 export type RunAnswerState = 'CONTINUE' | 'ENEMY_DEFEATED' | 'FLOOR_COMPLETE' | 'GAME_OVER' | 'VICTORY';

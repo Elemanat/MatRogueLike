@@ -3,15 +3,17 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Player {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  runs      Run[]
+  id            String   @id @default(uuid())
+  code          String   @unique
+  name          String   @unique
+  secretAnimal  String   // Emoji pro obnovení hesla (např. 🐶, 🐱, 🐸, 🦊, 🐼)
+  createdAt     DateTime @default(now())
+  runs          Run[]
 }
 
 model Run {
@@ -22,6 +24,7 @@ model Run {
   finishedAt            DateTime?
   status                String      @default("IN_PROGRESS")
   floor                 Int         @default(1)
+  room                  Int         @default(1)
   score                 Int         @default(0)
   currentProblemId      String?
   currentProblemAnswers String?
