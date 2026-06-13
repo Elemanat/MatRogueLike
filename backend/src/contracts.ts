@@ -32,6 +32,7 @@ export interface RunAnswerRequest {
     floor?: number;
     room?: number;
     items?: string;
+    playerHp?: number;
 }
 
 export type RunAnswerState = 'CONTINUE' | 'ENEMY_DEFEATED' | 'FLOOR_COMPLETE' | 'GAME_OVER' | 'VICTORY';

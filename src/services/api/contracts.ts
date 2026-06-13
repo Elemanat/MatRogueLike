@@ -57,6 +57,7 @@ export interface RunAnswerRequest {
     floor?: number;
     room?: number;
     items?: string;
+    playerHp?: number;
 }
 
 export type RunAnswerState = 'CONTINUE' | 'ENEMY_DEFEATED' | 'FLOOR_COMPLETE' | 'GAME_OVER' | 'VICTORY';
@@ -64,6 +65,8 @@ export type RunAnswerState = 'CONTINUE' | 'ENEMY_DEFEATED' | 'FLOOR_COMPLETE' | 
 export interface RunAnswerResponse {
     isCorrect: boolean;
     state: RunAnswerState;
+    currentHp?: number;
+    currentScore?: number;
     nextProblem?: ApiProblemDto;
     rewardItemId?: string;
 }

@@ -88,11 +88,11 @@ export const CombatScreen: React.FC<Props> = ({
         if (showWrongAnswerDialog) return;
 
         if (timeLeft <= 0) {
-            setTimeout(() => {
+            const t = setTimeout(() => {
                 setHasAnswered(true);
                 onAnswer('', false);
             }, 0);
-            return;
+            return () => clearTimeout(t);
         }
 
         const timer = window.setTimeout(() => {

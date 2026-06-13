@@ -116,7 +116,7 @@ const initialState: GameState = {
     currentProblem: null,
     selectedTower: null,
     peekNextRoom: null,
-    hasRerolledPeek: false, // NOVÉ
+    hasRerolledPeek: false,
     rewardItem: null,
     runStats: {...initialStats},
     sessionStats: {...initialStats},
@@ -209,7 +209,7 @@ function advanceRoom(state: GameState): GameState {
             currentEnemy: enemy,
             currentProblem: state.currentProblem,
             peekNextRoom: null,
-            hasRerolledPeek: false, // Reset vlastnosti
+            hasRerolledPeek: false,
             rewardItem: null,
         };
     }
@@ -226,7 +226,7 @@ function advanceRoom(state: GameState): GameState {
         currentEnemy: enemy,
         currentProblem: state.currentProblem,
         peekNextRoom: null,
-        hasRerolledPeek: false, // Reset vlastnosti
+        hasRerolledPeek: false,
         rewardItem: null,
     };
 }
@@ -398,7 +398,7 @@ function reducer(state: GameState, action: Action): GameState {
             const runStats = {...state.runStats, wrongAnswers: state.runStats.wrongAnswers + 1};
             const sessionStats = {...state.sessionStats, wrongAnswers: state.sessionStats.wrongAnswers + 1};
 
-            if (newHp <= 0 || apiState === 'GAME_OVER') {
+            if (newHp <= 0) {
                 return {
                     ...state,
                     playerHp: 0,
@@ -466,6 +466,9 @@ function reducer(state: GameState, action: Action): GameState {
 
             switch (action.itemId) {
                 case ItemId.HEAL:
+                    // OPRAVA: Hráč nemůže použít srdce, pokud má plné životy.
+                    if (state.playerHp >= state.playerMaxHp) return state;
+
                     return {
                         ...state,
                         playerHp: Math.min(state.playerMaxHp, state.playerHp + 1),
@@ -481,7 +484,6 @@ function reducer(state: GameState, action: Action): GameState {
                 case ItemId.SKIP: {
                     const e = state.currentEnemy;
                     if (e && e.maxHp > 1) {
-                        // Přeskočení jednoho příkladu bosse/minibosse (vezme mu 1 HP a načte nový příklad)
                         return {
                             ...state,
                             currentEnemy: {...e, hp: e.hp - 1},
@@ -489,7 +491,6 @@ function reducer(state: GameState, action: Action): GameState {
                             inventory: withoutOne(ItemId.SKIP)
                         };
                     }
-                    // Normální nepřítel má 1 HP - přeskakujeme celou místnost
                     return advanceRoom({...state, inventory: withoutOne(ItemId.SKIP)});
                 }
 
@@ -518,7 +519,6 @@ function reducer(state: GameState, action: Action): GameState {
             return {...state, peekNextRoom: null};
 
         case 'PEEK_REROLL': {
-            // Zablokování dalšího rerollu a ochrana bossů
             if (!state.peekNextRoom || state.hasRerolledPeek) return state;
             if (state.peekNextRoom === RoomType.MINIBOSS || state.peekNextRoom === RoomType.BOSS) return state;
 
@@ -530,7 +530,7 @@ function reducer(state: GameState, action: Action): GameState {
             return {
                 ...state,
                 peekNextRoom: newPeek,
-                hasRerolledPeek: true, // Zablokujeme další změny
+                hasRerolledPeek: true,
             };
         }
 
@@ -600,7 +600,8 @@ export function useGameState() {
                 correctAnswers: state.currentProblem?.correctAnswers,
                 floor: state.floor,
                 room: state.room,
-                items: JSON.stringify(state.inventory)
+                items: JSON.stringify(state.inventory),
+                playerHp: state.playerHp,
             });
             dispatch({
                 type: 'ANSWER',
@@ -619,12 +620,9 @@ export function useGameState() {
 
     const createNewPlayer = async (playerName: string, secretAnimal: string = '🐶') => {
         try {
-            // KROK 1: Registrace (kontrola unikátnosti)
-            const registerResponse = await apiClient.players.registerNewPlayer({playerName, secretAnimal});
-            
-            // KROK 2: Spuštění věže
+            await apiClient.players.registerNewPlayer({playerName, secretAnimal});
             const response = await apiClient.runs.startRun({playerName, towerId: 'fractions'});
-            
+
             window.localStorage.setItem(STORAGE_KEY_PLAYER_ID, response.playerId);
             window.localStorage.setItem(STORAGE_KEY_PLAYER_CODE, response.playerCode);
             window.localStorage.setItem(STORAGE_KEY_LAST_PLAYER, playerName);
@@ -694,7 +692,22 @@ export function useGameState() {
                     reroll: 'true'
                 });
 
-                const res = await fetch(`/api/problems/next?${params}`);
+                // Use proper environment variable for API base URL
+                const baseUrl = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:3001';
+                const res = await fetch(`${baseUrl}/api/problems/next?${params}`);
+
+                if (!res.ok) {
+                    throw new Error(`Server vrátil chybu: ${res.status}`);
+                }
+
+                // Bezpečnostní pojistka, pokud by server přesto vracel nečekaně HTML
+                const contentType = res.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    const responseText = await res.text();
+                    console.error('Neočekávaný obsah z serveru:', responseText);
+                    throw new Error("Odpověď ze serveru není ve formátu JSON.");
+                }
+
                 const data = await res.json();
 
                 dispatch({
@@ -704,6 +717,7 @@ export function useGameState() {
                 });
             } catch (error) {
                 console.error('Nepodařilo se vyměnit příklad:', error);
+                // Můžeš přidat např. alert nebo toast notifikaci do UI, ať o tom hráč ví
             }
         } else {
             dispatch({type: 'USE_ITEM', itemId});

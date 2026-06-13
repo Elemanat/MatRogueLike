@@ -141,7 +141,8 @@ app.post('/api/runs/answer', async (req, res) => {
             correctAnswers,
             floor,
             room,
-            items
+            items,
+            playerHp,
         } = req.body as RunAnswerRequest;
 
         console.log(`\n========================================`);
@@ -183,7 +184,8 @@ app.post('/api/runs/answer', async (req, res) => {
             }
         });
 
-        let newHp = run.hp;
+        // Frontend is source of truth for HP (it knows about heals, items, etc.)
+        let newHp = playerHp !== undefined ? playerHp : run.hp;
         let newScore = run.score;
         let state: RunAnswerState = 'CONTINUE';
 
@@ -431,10 +433,10 @@ app.get('/api/problems/next', (req, res) => {
             seed: `${towerId}:${floor}:${enemyType}:${Date.now()}`
         });
 
-        res.json({problem});
+        res.type('application/json').json({problem});
     } catch (error) {
         console.error(error);
-        res.status(500).json({error: "Internal server error"});
+        res.type('application/json').status(500).json({error: "Internal server error"});
     }
 });
 
