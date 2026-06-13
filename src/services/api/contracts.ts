@@ -7,6 +7,17 @@ export interface ApiProblemDto {
     difficulty: number;
 }
 
+export interface RegisterNewPlayerRequest {
+    playerName: string;
+    secretAnimal: string;
+}
+
+export interface RegisterNewPlayerResponse {
+    playerId: string;
+    playerCode: string;
+    playerName: string;
+}
+
 export interface RunStartRequest {
     playerName: string;
     towerId: string;
@@ -21,6 +32,15 @@ export interface RunStartResponse {
     hp?: number;       // Přidáno
     maxHp?: number;    // Přidáno
     initialProblem?: ApiProblemDto;
+}
+
+export interface RecoverCodeRequest {
+    playerName: string;
+    secretAnimal: string;
+}
+
+export interface RecoverCodeResponse {
+    playerCode: string;
 }
 
 export interface LoginByCodeResponse {

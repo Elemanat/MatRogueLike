@@ -8,11 +8,12 @@ datasource db {
 }
 
 model Player {
-  id        String   @id @default(uuid())
-  code      String   @unique
-  name      String   @unique
-  createdAt DateTime @default(now())
-  runs      Run[]
+  id            String   @id @default(uuid())
+  code          String   @unique
+  name          String   @unique
+  secretAnimal  String   // Emoji pro obnovení hesla (např. 🐶, 🐱, 🐸, 🦊, 🐼)
+  createdAt     DateTime @default(now())
+  runs          Run[]
 }
 
 model Run {

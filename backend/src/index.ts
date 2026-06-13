@@ -38,7 +38,6 @@ app.get('/api/health', (_req, res) => {
 
 app.get('/api/ready', async (_req, res) => {
     try {
-        // Test database connection
         await prisma.$queryRaw`SELECT 1`;
         res.json({status: 'ready'});
     } catch (error) {
@@ -46,7 +45,42 @@ app.get('/api/ready', async (_req, res) => {
         res.status(503).json({status: 'not ready', error: 'Database connection failed'});
     }
 });
+
 // ── API Routes ─────────────────────────────────────────────────────────────
+
+app.post('/api/players/register', async (req, res) => {
+    try {
+        const {playerName, secretAnimal} = req.body;
+
+        if (!playerName || !secretAnimal) {
+            return res.status(400).json({error: "playerName and secretAnimal are required"});
+        }
+
+        const existingPlayer = await prisma.player.findUnique({where: {name: playerName}});
+        if (existingPlayer) {
+            return res.status(409).json({error: "Toto jméno už někdo používá. Zvol si jiné."});
+        }
+
+        const newPlayer = await prisma.player.create({
+            data: {
+                name: playerName,
+                code: generatePlayerCode(),
+                secretAnimal: secretAnimal
+            }
+        });
+
+        console.log(`[Backend] Zaregistrován nový hráč: ${newPlayer.name} se zvířetem ${newPlayer.secretAnimal}`);
+
+        res.json({
+            playerId: newPlayer.id,
+            playerCode: newPlayer.code,
+            playerName: newPlayer.name
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "Internal server error"});
+    }
+});
 
 app.post('/api/runs/start', async (req, res) => {
     try {
@@ -55,15 +89,17 @@ app.post('/api/runs/start', async (req, res) => {
 
         let player = await prisma.player.findUnique({where: {name: playerName}});
         if (!player) {
-            player = await prisma.player.create({data: {name: playerName, code: generatePlayerCode()}});
+            player = await prisma.player.create({data: {name: playerName, code: generatePlayerCode(), secretAnimal: '🐶'}});
         }
 
         const seed = `${playerName}-${Date.now()}`;
+        const nodeId = `start-${playerName}-${Date.now()}`;
 
         const initialProblem = generateProblem({
             towerId,
             floor: 1,
             enemyType: 'NORMAL',
+            nodeId,
             seed
         });
 
@@ -124,12 +160,10 @@ app.post('/api/runs/answer', async (req, res) => {
         let isCorrect = false;
         const topic = run.towerId;
 
-        // ✅ Kontroluj odpověď proti correctAnswers od frontendu
         if (correctAnswers && correctAnswers.length > 0) {
             console.log(`   Using frontend answers`);
             isCorrect = correctAnswers.some(correct => isEquivalentAnswer(answer, correct));
         } else if (run.currentProblemAnswers) {
-            // Fallback - pokud frontend neodesílá correctAnswers (zpětná kompatibilita)
             console.log(`   Fallback: Using DB answers`);
             const answers: string[] = JSON.parse(run.currentProblemAnswers);
             isCorrect = answers.some(correct => isEquivalentAnswer(answer, correct));
@@ -168,6 +202,7 @@ app.post('/api/runs/answer', async (req, res) => {
                 towerId: run.towerId,
                 floor: run.floor,
                 enemyType: 'NORMAL',
+                nodeId: `${run.id}:${Date.now()}`,
                 seed: `${problemId}:next:${Date.now()}`
             });
         }
@@ -228,6 +263,36 @@ app.post('/api/players/login-by-code', async (req, res) => {
     }
 });
 
+// ZDE JE TVOJE ZVÍŘÁTKO PRO OBNOVU KÓDU!
+app.post('/api/players/recover', async (req, res) => {
+    try {
+        const {playerName, secretAnimal} = req.body;
+
+        if (!playerName || !secretAnimal) {
+            return res.status(400).json({error: "playerName and secretAnimal are required"});
+        }
+
+        const player = await prisma.player.findUnique({
+            where: {name: playerName}
+        });
+
+        if (!player) {
+            return res.status(404).json({error: "Hráč nenalezen. Neudělal jsi vespokojenosti překlep?"});
+        }
+
+        if (player.secretAnimal !== secretAnimal) {
+            return res.status(401).json({error: "Špatné zvířátko. Zkus znovu."});
+        }
+
+        res.json({
+            playerCode: player.code
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: "Internal server error"});
+    }
+});
+
 app.get('/api/players/:playerName/stats', async (req, res) => {
     try {
         const {playerName} = req.params;
@@ -254,7 +319,6 @@ app.get('/api/players/:playerName/stats', async (req, res) => {
         const towerBadges: Record<string, number> = {};
 
         player.runs.forEach(run => {
-            // Počítání odznaků - jeden odznak za každý VICTORY run
             if (run.status === 'VICTORY') {
                 towerBadges[run.towerId] = (towerBadges[run.towerId] || 0) + 1;
             }
@@ -363,7 +427,7 @@ app.get('/api/problems/next', (req, res) => {
             towerId,
             floor,
             enemyType,
-            // Přidáme time-based seed, aby se příklady neopakovaly
+            nodeId: `api-${Date.now()}-${Math.random()}`,
             seed: `${towerId}:${floor}:${enemyType}:${Date.now()}`
         });
 
@@ -385,19 +449,14 @@ const server = app.listen(PORT, () => {
 // Graceful shutdown
 async function gracefulShutdown(signal: string) {
     console.log(`\n[Backend] Received ${signal}, shutting down gracefully...`);
-    
-    // Přestani přijímat nové requesty
+
     server.close(async () => {
         console.log('[Backend] HTTP server closed');
-        
-        // Odpoj od databáze
         await prisma.$disconnect();
         console.log('[Backend] Database disconnected');
-        
         process.exit(0);
     });
-    
-    // Force shutdown po 30 sekundách
+
     setTimeout(() => {
         console.error('[Backend] Forced shutdown after 30s timeout');
         process.exit(1);
@@ -406,5 +465,3 @@ async function gracefulShutdown(signal: string) {
 
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-
-

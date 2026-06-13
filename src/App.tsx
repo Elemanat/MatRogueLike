@@ -1,4 +1,4 @@
-import {useCallback, useEffect} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {useGameState} from './hooks/useGameState';
 import {Screen, ItemId} from './types/game';
 import {apiClient} from './services/api';
@@ -10,6 +10,7 @@ import {WrongAnswerDialog} from './components/WrongAnswerDialog';
 import {LoginScreen} from './screens/LoginScreen';
 import {NewPlayerScreen} from './screens/NewPlayerScreen';
 import {ExistingPlayerLoginScreen} from './screens/ExistingPlayerLoginScreen';
+import {RecoverCodeDialog} from './screens/RecoverCodeDialog';
 import {PlayerCodeDialog} from './screens/PlayerCodeDialog';
 import {MenuScreen} from './screens/MenuScreen';
 import {TowerSelectScreen} from './screens/TowerSelectScreen';
@@ -30,6 +31,7 @@ const GAME_SCREENS = new Set<Screen>([
 function App() {
     const {state, dispatch, actions} = useGameState();
     const showHUD = GAME_SCREENS.has(state.currentScreen);
+    const [newPlayerError, setNewPlayerError] = useState<string>('');
 
     const handleAddTimeUsed = useCallback(() => {
         // Vizuální feedback je řešen v CombatScreen přes toast
@@ -43,6 +45,20 @@ function App() {
             });
         }
     }, [state.currentScreen, state.runId]);
+
+    const handleCreateNewPlayer = async (name: string, secretAnimal: string) => {
+        setNewPlayerError('');
+        try {
+            await actions.createNewPlayer(name, secretAnimal);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '';
+            if (errorMessage.includes('409')) {
+                setNewPlayerError('Toto jméno už někdo používá. Zvol si jiné.');
+            } else {
+                setNewPlayerError('Chyba při vytváření hráče.');
+            }
+        }
+    };
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2">
@@ -79,15 +95,20 @@ function App() {
 
                     {state.currentScreen === Screen.NEW_PLAYER && (
                         <NewPlayerScreen
-                            onSubmit={name => actions.createNewPlayer(name)}
-                            onBack={() => dispatch({type: 'TO_LOGIN'})}
+                            onSubmit={handleCreateNewPlayer}
+                            onBack={() => {
+                                setNewPlayerError('');
+                                dispatch({type: 'TO_LOGIN'});
+                            }}
                             isLoading={state.isLoading}
+                            error={newPlayerError}
                         />
                     )}
 
                     {state.currentScreen === Screen.EXISTING_PLAYER_LOGIN && (
                         <ExistingPlayerLoginScreen
                             onSubmit={code => actions.loginByCode(code)}
+                            onRecovery={() => dispatch({type: 'TO_RECOVER_CODE_DIALOG'})}
                             onBack={() => dispatch({type: 'TO_LOGIN'})}
                             isLoading={state.isLoading}
                             error={state.loginError}
@@ -125,7 +146,7 @@ function App() {
                         <SettingsScreen
                             settings={state.settings}
                             onChange={settings => dispatch({type: 'UPDATE_SETTINGS', settings})}
-                            onResetSessionStats={() => dispatch({type: 'RESET_SESSION_STATS'})}
+                            // OPRAVENO: Odstraněn onResetSessionStats
                             onBack={() => dispatch({type: 'TO_MENU'})}
                         />
                     )}
@@ -139,8 +160,10 @@ function App() {
 
                     {state.currentScreen === Screen.EMPTY_ROOM && (
                         <EmptyRoomScreen
+                            rewardItem={state.rewardItem} // <--- PŘIDAT TOTO
                             onRest={() => dispatch({type: 'CAMP_REST'})}
                             onScavenge={() => dispatch({type: 'CAMP_SCAVENGE'})}
+                            onTakeReward={() => dispatch({type: 'TAKE_REWARD'})} // <--- A TOTO
                         />
                     )}
 
@@ -163,10 +186,8 @@ function App() {
                             onAnswer={(ans, correct) => {
                                 actions.answer(ans ?? '', correct);
                             }}
-                            onUseItem={id => dispatch({
-                                type: 'USE_ITEM',
-                                itemId: id as typeof ItemId[keyof typeof ItemId]
-                            })}
+                            hasRerolledPeek={state.hasRerolledPeek}
+                            onUseItem={id => actions.useItem(id as typeof ItemId[keyof typeof ItemId])}
                             onClosePeek={() => dispatch({type: 'CLOSE_PEEK'})}
                             onPeekSkip={() => dispatch({type: 'PEEK_REROLL'})}
                             onAddTimeUsed={handleAddTimeUsed}
@@ -217,6 +238,13 @@ function App() {
                     yourAnswer={state.wrongAnswerDialog.yourAnswer}
                     correctAnswers={state.wrongAnswerDialog.correctAnswers}
                     onContinue={() => dispatch({type: 'CLOSE_WRONG_ANSWER_DIALOG'})}
+                />
+            )}
+
+            {state.showRecoverCodeDialog && (
+                <RecoverCodeDialog
+                    onClose={() => dispatch({type: 'CLOSE_RECOVER_CODE_DIALOG'})}
+                    onRecover={actions.recoverCode}
                 />
             )}
         </div>

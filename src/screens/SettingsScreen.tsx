@@ -1,17 +1,15 @@
 import React from 'react';
 import type {GameSettings} from '../types/game';
-import {getApiRuntimeConfig} from '../services/api/config';
 
 interface Props {
     settings: GameSettings;
     onChange: (settings: Partial<GameSettings>) => void;
-    onResetSessionStats: () => void;
     onBack: () => void;
 }
 
-export const SettingsScreen: React.FC<Props> = ({settings, onChange, onResetSessionStats, onBack}) => (
+export const SettingsScreen: React.FC<Props> = ({settings, onChange, onBack}) => (
     <div className="flex flex-col h-full px-4 py-6 gap-4">
-        <h2 className="text-3xl font-bold text-center text-[var(--ink)]">Nastavení</h2>
+        <h2 className="text-3xl font-bold text-center text-(--ink)">Nastavení</h2>
 
         <div className="flex flex-col gap-4 flex-1">
             {/* Zvuk */}
@@ -29,7 +27,7 @@ export const SettingsScreen: React.FC<Props> = ({settings, onChange, onResetSess
             <div className="sketch-box-light px-4 py-3 flex justify-between items-center">
                 <span className="text-xl">⏳ Čas na příklad</span>
                 <select
-                    className="sketch-box-light p-1 text-base cursor-pointer bg-[var(--paper)]"
+                    className="sketch-box-light p-1 text-base cursor-pointer bg-(--paper)"
                     value={settings.roundTimeSeconds}
                     onChange={e => onChange({roundTimeSeconds: Number(e.target.value)})}
                 >
@@ -48,22 +46,6 @@ export const SettingsScreen: React.FC<Props> = ({settings, onChange, onResetSess
                 >
                     {settings.reducedMotion ? 'Ano' : 'Ne'}
                 </button>
-            </div>
-
-            {/* Reset statistik */}
-            <button
-                className="sketch-btn sketch-btn-danger text-lg py-2"
-                onClick={onResetSessionStats}
-            >
-                Reset session statistik
-            </button>
-
-            {/* API Info */}
-            <div className="sketch-box-light px-4 py-3 flex justify-between items-center">
-                <span className="text-xl">API režim</span>
-                <span className="text-lg font-semibold text-[var(--ink-light)]">
-          {getApiRuntimeConfig().mode}
-        </span>
             </div>
         </div>
 

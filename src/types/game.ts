@@ -54,6 +54,7 @@ export interface Item {
     id: ItemId;
     name: string;
     description: string;
+    icon?: string;
 }
 
 export interface Problem {
@@ -101,11 +102,13 @@ export interface GameState {
     currentProblem: Problem | null;
     selectedTower: Tower | null;
     peekNextRoom: RoomType | null;
+    hasRerolledPeek: boolean;
     rewardItem: Item | null;
     runStats: PlayerStats;
     sessionStats: PlayerStats;
     settings: GameSettings;
     wrongAnswerDialog: { prompt: string; yourAnswer: string; correctAnswers: string[] } | null;
+    showRecoverCodeDialog?: boolean;
     isLoading?: boolean;
     loginError?: string;
 }

@@ -12,15 +12,15 @@ export const VictoryScreen: React.FC<Props> = ({playerName, towerName, stats, on
     <div className="flex flex-col items-center justify-center h-full px-4 gap-6">
         <div className="text-5xl">🏆</div>
 
-        <h2 className="text-4xl font-bold text-center text-[var(--gold)]">
+        <h2 className="text-4xl font-bold text-center text-(--gold)">
             Vítěz!
         </h2>
 
-        <p className="text-xl text-center text-[var(--ink)]">
+        <p className="text-xl text-center text-(--ink)">
             {playerName} zdolal <strong>{towerName}</strong>!
         </p>
 
-        <div className="sketch-box w-full px-4 py-3 flex flex-col gap-2 text-[var(--ink)]">
+        <div className="sketch-box w-full px-4 py-3 flex flex-col gap-2 text-(--ink)">
             <p className="text-lg text-center font-semibold">Výsledky:</p>
             <div className="flex justify-between text-lg">
                 <span>🏰 Patra</span><span>{stats.floorsCompleted}</span>

@@ -8,6 +8,10 @@ import type {
     RunStartResponse,
     PlayerStatsResponse,
     LoginByCodeResponse,
+    RecoverCodeRequest,
+    RecoverCodeResponse,
+    RegisterNewPlayerRequest,
+    RegisterNewPlayerResponse,
 } from './contracts';
 import type {ApiRuntimeConfig} from './config';
 
@@ -92,6 +96,18 @@ export function createRealApiClient(config: ApiRuntimeConfig): ApiClient {
                 return fetchJson<LoginByCodeResponse>(baseUrl, config.timeoutMs, '/api/players/login-by-code', {
                     method: 'POST',
                     body: JSON.stringify({code}),
+                });
+            },
+            async registerNewPlayer(request: RegisterNewPlayerRequest): Promise<RegisterNewPlayerResponse> {
+                return fetchJson<RegisterNewPlayerResponse>(baseUrl, config.timeoutMs, '/api/players/register', {
+                    method: 'POST',
+                    body: JSON.stringify(request),
+                });
+            },
+            async recoverCode(request: RecoverCodeRequest): Promise<RecoverCodeResponse> {
+                return fetchJson<RecoverCodeResponse>(baseUrl, config.timeoutMs, '/api/players/recover', {
+                    method: 'POST',
+                    body: JSON.stringify(request),
                 });
             },
         },

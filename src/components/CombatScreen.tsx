@@ -1,6 +1,6 @@
 import React, {useMemo, useState, useCallback, useEffect} from 'react';
-import type {Problem, Item, Enemy, RoomType} from '../types/game';
-import {EnemyType, ItemId} from '../types/game';
+import type {Problem, Item, Enemy} from '../types/game';
+import {EnemyType, ItemId, RoomType} from '../types/game';
 import {ItemBar} from './ItemBar';
 import {HealthBar} from './HealthBar';
 
@@ -51,6 +51,7 @@ interface Props {
     playerMaxHp: number;
     inventory: Item[];
     peekNextRoom: RoomType | null;
+    hasRerolledPeek: boolean;
     roundTimeSeconds: number;
     reducedMotion: boolean;
     showWrongAnswerDialog?: boolean;
@@ -66,6 +67,7 @@ export const CombatScreen: React.FC<Props> = ({
                                                   problem,
                                                   inventory,
                                                   peekNextRoom,
+                                                  hasRerolledPeek,
                                                   roundTimeSeconds,
                                                   reducedMotion,
                                                   showWrongAnswerDialog,
@@ -83,10 +85,13 @@ export const CombatScreen: React.FC<Props> = ({
     useEffect(() => {
         if (peekNextRoom) return;
         if (hasAnswered) return;
-        if (showWrongAnswerDialog) return; // Freeze timer when dialog is showing
+        if (showWrongAnswerDialog) return;
+
         if (timeLeft <= 0) {
-            setHasAnswered(true);
-            onAnswer('', false);
+            setTimeout(() => {
+                setHasAnswered(true);
+                onAnswer('', false);
+            }, 0);
             return;
         }
 
@@ -174,9 +179,12 @@ export const CombatScreen: React.FC<Props> = ({
                         <p className="text-3xl font-bold text-center">{ROOM_TYPE_LABEL[peekNextRoom]}</p>
                         <div className="flex gap-3 w-full flex-col">
                             <button className="sketch-btn text-lg" onClick={onClosePeek}>✓ V pořádku</button>
-                            <button className="sketch-btn sketch-btn-warning text-lg"
-                                    onClick={onPeekSkip}>🔄 Změnit místnost
-                            </button>
+
+                            {!hasRerolledPeek && peekNextRoom !== RoomType.MINIBOSS && peekNextRoom !== RoomType.BOSS && (
+                                <button className="sketch-btn sketch-btn-warning text-lg" onClick={onPeekSkip}>
+                                    🔄 Změnit místnost
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

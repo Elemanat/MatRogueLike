@@ -33,4 +33,3 @@ fi
 
 # V production módu - spusť aplikaci
 exec npm start
-

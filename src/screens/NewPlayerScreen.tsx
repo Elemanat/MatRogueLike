@@ -1,17 +1,27 @@
 import React, {useState} from 'react';
 
+const ANIMALS = [
+    {emoji: '🐶', label: 'Pes'},
+    {emoji: '🐱', label: 'Kočka'},
+    {emoji: '🐸', label: 'Žába'},
+    {emoji: '🦊', label: 'Liška'},
+    {emoji: '🐼', label: 'Panda'},
+] as const;
+
 interface Props {
-    onSubmit: (name: string) => void;
+    onSubmit: (name: string, secretAnimal: string) => void;
     onBack: () => void;
     isLoading?: boolean;
+    error?: string;
 }
 
-export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading}) => {
+export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, error}) => {
     const [name, setName] = useState('');
+    const [selectedAnimal, setSelectedAnimal] = useState<string>('🐶');
 
     const handleSubmit = () => {
         if (name.trim()) {
-            onSubmit(name.trim());
+            onSubmit(name.trim(), selectedAnimal);
         }
     };
 
@@ -33,6 +43,39 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading}) 
                     maxLength={20}
                     disabled={isLoading}
                 />
+
+                {error && (
+                    <p className="text-base font-semibold" style={{color: 'var(--danger)'}}>
+                        ❌ {error}
+                    </p>
+                )}
+            </div>
+
+            <div className="w-full flex flex-col gap-2">
+                <p className="text-sm text-center" style={{color: 'var(--ink-light)'}}>
+                    Vyber si své tajné zvířátko:
+                </p>
+                <div className="flex gap-3 justify-center">
+                    {ANIMALS.map(animal => (
+                        <button
+                            key={animal.emoji}
+                            className="text-3xl px-4 py-3 rounded-lg transition-all"
+                            style={{
+                                background: selectedAnimal === animal.emoji ? 'var(--primary)' : 'var(--paper)',
+                                border: selectedAnimal === animal.emoji
+                                    ? '3px solid var(--ink)'
+                                    : '2px solid var(--ink-light)',
+                                opacity: isLoading ? 0.5 : 1,
+                                cursor: isLoading ? 'not-allowed' : 'pointer',
+                            }}
+                            onClick={() => setSelectedAnimal(animal.emoji)}
+                            disabled={isLoading}
+                            title={animal.label}
+                        >
+                            {animal.emoji}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             <div className="flex gap-3 w-full">

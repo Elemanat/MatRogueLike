@@ -3,11 +3,12 @@ import React, {useState} from 'react';
 interface Props {
     onSubmit: (code: string) => void;
     onBack: () => void;
+    onRecovery: () => void;
     isLoading?: boolean;
     error?: string;
 }
 
-export const ExistingPlayerLoginScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, error}) => {
+export const ExistingPlayerLoginScreen: React.FC<Props> = ({onSubmit, onBack, onRecovery, isLoading, error}) => {
     const [code, setCode] = useState('');
 
     const handleSubmit = () => {
@@ -63,6 +64,15 @@ export const ExistingPlayerLoginScreen: React.FC<Props> = ({onSubmit, onBack, is
                     Přihlásit →
                 </button>
             </div>
+
+            <button
+                className="text-sm underline hover:opacity-70 transition-opacity"
+                style={{color: 'var(--ink-light)'}}
+                onClick={onRecovery}
+                disabled={isLoading}
+            >
+                Zapomněl jsi kód?
+            </button>
         </div>
     );
 };
