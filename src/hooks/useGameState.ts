@@ -196,7 +196,7 @@ function advanceRoom(state: GameState): GameState {
 
     if (nextRoom > tower.roomsPerFloor) {
         const nextFloor = state.floor + 1;
-        const rt = generateRoomType(1, tower.roomsPerFloor, nextFloor, tower.floors);
+        const rt = state.peekNextRoom || generateRoomType(1, tower.roomsPerFloor, nextFloor, tower.floors);
         const screen = screenForRoom(rt);
         const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
             ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)
@@ -214,7 +214,7 @@ function advanceRoom(state: GameState): GameState {
         };
     }
 
-    const rt = generateRoomType(nextRoom, tower.roomsPerFloor, state.floor, tower.floors);
+    const rt = state.peekNextRoom || generateRoomType(nextRoom, tower.roomsPerFloor, state.floor, tower.floors);
     const screen = screenForRoom(rt);
     const enemy = (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS)
         ? makeEnemy(rt === RoomType.COMBAT ? EnemyType.NORMAL : rt === RoomType.MINIBOSS ? EnemyType.MINIBOSS : EnemyType.BOSS)

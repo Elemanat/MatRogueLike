@@ -4,93 +4,115 @@ import {
     int, pick, stringToSeed, uniqueWrongAnswers, formatDecimal
 } from './utils';
 
-// ==========================================
-// KONFIGURACE A MAGICKÁ ČÍSLA
-// ==========================================
+const FRACTION_DENOMINATORS = [2, 4, 5, 10];
 
-const FRACTION_DENOMINATORS = [2, 4, 5, 8, 10, 20, 25, 50];
-
-// ==========================================
-// POMOCNÉ FUNKCE PRO DESETINNÁ ČÍSLA (CHYTÁKY)
-// ==========================================
-
-// Simuluje typické chyby žáků při sčítání/odčítání desetinných čísel
 function generateDecimalTraps(a: number, b: number, isAdd: boolean): string[] {
     const traps = new Set<string>();
+    const correct = isAdd ? a + b : Math.max(0, a - b);
 
-    // 1. Dítě ignoruje desetinnou čárku a sčítá/odčítá jen cifry, jako by to byla celá čísla
-    const strA = String(a).replace('.', '');
-    const strB = String(b).replace('.', '');
-    const rawCalc = isAdd ? Number(strA) + Number(strB) : Math.max(0, Number(strA) - Number(strB));
+    traps.add(formatDecimal(correct * 10));
+    if (correct > 10) traps.add(formatDecimal(correct / 10));
 
-    // Zkusí to posunout o 1 nebo 2 desetinná místa (typicky špatné zarovnání)
-    traps.add(formatDecimal(rawCalc / 10));
-    traps.add(formatDecimal(rawCalc / 100));
+    traps.add(formatDecimal(correct + 1));
+    traps.add(formatDecimal(Math.max(0, correct - 1)));
 
-    // 2. Extrémně častá chyba: špatné zarovnání celého čísla a desetinného (např. 12 + 1.5 -> dítě sečte 2 a 5 -> 13.5 nebo 2.7)
-    if (Number.isInteger(a) && !Number.isInteger(b)) {
-        traps.add(formatDecimal(a / 10 + b)); // Posune celé číslo o řád dolů
-    } else if (!Number.isInteger(a) && Number.isInteger(b)) {
-        traps.add(formatDecimal(a + b / 10)); // Posune celé číslo o řád dolů
+    if (isAdd && Number.isInteger(a) && !Number.isInteger(b)) {
+        const decB = b - Math.floor(b);
+        traps.add(formatDecimal(a + Math.floor(b) + decB / 10));
+    } else if (isAdd && !Number.isInteger(a) && Number.isInteger(b)) {
+        const decA = a - Math.floor(a);
+        traps.add(formatDecimal(b + Math.floor(a) + decA / 10));
     }
 
-    // 3. Při odčítání s přechodem: dítě odečte menší od většího v každém sloupci zvlášť (např. 19.4 - 12.8 -> 9-2=7, 8-4=4 -> 7.4)
     if (!isAdd) {
         const intA = Math.floor(a);
         const decA = Math.round((a - intA) * 10);
         const intB = Math.floor(b);
         const decB = Math.round((b - intB) * 10);
 
-        if (decA < decB) { // Nastává přechod přes desítku
+        if (decA < decB) {
             const fakeInt = intA - intB;
-            const fakeDec = decB - decA; // Dítě to otočí, aby to šlo odečíst
+            const fakeDec = decB - decA;
             traps.add(formatDecimal(fakeInt + fakeDec / 10));
         }
     }
 
-    return Array.from(traps);
+    traps.add(formatDecimal(correct + 0.1));
+    traps.add(formatDecimal(Math.max(0, correct - 0.1)));
+
+    return Array.from(traps).filter(t => t !== formatDecimal(correct));
 }
 
-// Generuje sady čísel, která mažou dětem představivost (vypadají velká, ale jsou malá)
-// Generuje sady čísel, která mažou dětem představivost (vypadají velká, ale jsou malá)
 function generateComparisonSet(rng: () => number): { correct: number, traps: number[], type: 'min' | 'max' } {
-    const base = int(rng, 0, 2); // 0, 1, nebo 2 celá
-
-    // as const zajistí, že type bude striktně 'min' | 'max' a ne jen 'string'
+    const base = int(rng, 0, 50);
     const type = pick(rng, ['min', 'max'] as const);
 
+    const decimalSets = [
+        [0.5, 0.05, 0.55, 0.055],
+        [0.1, 0.01, 0.11, 0.101],
+        [0.9, 0.09, 0.99, 0.099],
+        [0.2, 0.22, 0.02, 0.202],
+        [0.4, 0.04, 0.44, 0.404],
+        [0.7, 0.77, 0.07, 0.077],
+        [0.3, 0.33, 0.03, 0.303]
+    ];
+
+    const selectedSet = pick(rng, decimalSets);
+    const values = selectedSet.map(d => base + d).sort((a, b) => a - b);
+
     if (type === 'min') {
-        // Hledáme nejmenší. Chyták: čísla s mnoha ciframi vypadají velká.
         return {
-            correct: base + 0.09,
-            traps: [base + 0.1, base + 0.11, base + 0.099],
+            correct: values[0]!,
+            traps: [values[1]!, values[2]!, values[3]!],
             type
         };
     } else {
-        // Hledáme největší. Chyták: 0.199 vypadá na první pohled větší než 0.2.
         return {
-            correct: base + 0.2,
-            traps: [base + 0.19, base + 0.199, base + 0.029],
+            correct: values[3]!,
+            traps: [values[0]!, values[1]!, values[2]!],
             type
         };
     }
 }
 
-// ==========================================
-// HLAVNÍ GENERÁTOR
-// ==========================================
-
 export function buildDecimalsProblem(ctx: ProblemBuilderContext): ApiProblemDto {
-    const {rng, floor, difficulty, themeKey} = ctx;
+    const {rng, difficulty, themeKey} = ctx;
 
-    // Porovnávání a násobení 10/100 je super pro lehká patra, sčítání/odčítání pro těžší
-    const variantsPool = floor <= 2
+    if (difficulty >= 4) {
+        const a = int(rng, 11, 99) / 10;
+        const b = int(rng, 11, 99) / 10;
+        const sum = a + b;
+        const factor = pick(rng, [10, 100]);
+
+        const isMul = pick(rng, [true, false]);
+        const operator = isMul ? '*' : '/';
+        const correct = isMul ? sum * factor : sum / factor;
+
+        const prompt = `(${formatDecimal(a)} + ${formatDecimal(b)}) ${operator} ${factor} = ?`;
+
+        const traps = [
+            formatDecimal(sum),
+            formatDecimal(isMul ? sum / factor : sum * factor),
+            formatDecimal(a + (isMul ? b * factor : b / factor)),
+            formatDecimal(isMul ? sum * (factor * 10) : sum / (factor * 10))
+        ];
+
+        return {
+            id: `dec-${difficulty}-boss-${stringToSeed(ctx.nodeId)}`,
+            prompt,
+            correctAnswers: [formatDecimal(correct)],
+            wrongAnswers: uniqueWrongAnswers([formatDecimal(correct)], traps, 4),
+            topic: themeKey,
+            difficulty,
+        };
+    }
+
+    const variantsPool = difficulty <= 1
         ? ['compare', 'multiply-divide', 'add']
         : ['add', 'subtract', 'fraction-to-decimal', 'multiply-divide'];
 
     const variant = pick(rng, variantsPool);
 
-    // 1. POROVNÁVÁNÍ ČÍSEL (Nová šablona)
     if (variant === 'compare') {
         const {correct, traps, type} = generateComparisonSet(rng);
         const prompt = type === 'min' ? 'Které z těchto čísel je NEJMENŠÍ?' : 'Které z těchto čísel je NEJVĚTŠÍ?';
@@ -105,46 +127,93 @@ export function buildDecimalsProblem(ctx: ProblemBuilderContext): ApiProblemDto 
         };
     }
 
-    // 2. NÁSOBENÍ A DĚLENÍ 10, 100, 1000 (Nová šablona)
     if (variant === 'multiply-divide') {
         const isMultiply = pick(rng, [true, false]);
-        const factor = pick(rng, [10, 100]);
-        // Vygenerujeme číslo typu 3.45 nebo 12.8
-        const num = int(rng, 10, 999) / 100;
 
-        const operator = isMultiply ? '*' : '/'; // Můžeš změnit na '·' nebo ':' podle toho, co máš v UI
-        const prompt = `${formatDecimal(num)} ${operator} ${factor} = ?`;
+        if (isMultiply) {
+            const isDecDec = pick(rng, [true, false]);
 
-        const correct = isMultiply ? num * factor : num / factor;
-        const correctStr = formatDecimal(correct);
+            if (isDecDec) {
+                const a = int(rng, 2, 12);
+                const b = int(rng, 2, 9);
+                const numA = a / 10;
+                const numB = b / 10;
+                const correct = (a * b) / 100;
 
-        const wrongAnswers = [
-            formatDecimal(isMultiply ? num / factor : num * factor), // Dítě udělalo opačnou operaci
-            formatDecimal(isMultiply ? num * (factor * 10) : num / (factor * 10)), // Posun o nulu navíc
-            formatDecimal(isMultiply ? num * (factor / 10) : num / (factor / 10)), // Posun o nulu méně
-            String(Math.floor(num)) // Odstřihne desetinou část úplně
-        ];
+                const prompt = `${formatDecimal(numA)} * ${formatDecimal(numB)} = ?`;
+                const traps = [
+                    formatDecimal((a * b) / 10),
+                    formatDecimal((a * b) / 1000),
+                    formatDecimal(a * b),
+                    formatDecimal((a * b + 1) / 100)
+                ];
 
-        return {
-            id: `dec-${difficulty}-muldiv-${stringToSeed(ctx.nodeId)}`,
-            prompt,
-            correctAnswers: [correctStr],
-            wrongAnswers: uniqueWrongAnswers([correctStr], wrongAnswers, 4),
-            topic: themeKey,
-            difficulty,
-        };
+                return {
+                    id: `dec-${difficulty}-muldd-${stringToSeed(ctx.nodeId)}`,
+                    prompt,
+                    correctAnswers: [formatDecimal(correct)],
+                    wrongAnswers: uniqueWrongAnswers([formatDecimal(correct)], traps, 4),
+                    topic: themeKey,
+                    difficulty,
+                };
+            } else {
+                const a = int(rng, 2, 12);
+                const b = int(rng, 2, 9);
+                const num = a / 10;
+                const correct = num * b;
+
+                const prompt = `${formatDecimal(num)} * ${b} = ?`;
+                const traps = [
+                    formatDecimal(a * b),
+                    formatDecimal(correct / 10),
+                    formatDecimal(correct * 10),
+                    formatDecimal(correct + 0.1)
+                ];
+
+                return {
+                    id: `dec-${difficulty}-muldi-${stringToSeed(ctx.nodeId)}`,
+                    prompt,
+                    correctAnswers: [formatDecimal(correct)],
+                    wrongAnswers: uniqueWrongAnswers([formatDecimal(correct)], traps, 4),
+                    topic: themeKey,
+                    difficulty,
+                };
+            }
+        } else {
+            const divisor = int(rng, 2, 9);
+            const correctResult = pick(rng, [int(rng, 2, 12) / 10, int(rng, 2, 9) / 100]);
+            const dividend = correctResult * divisor;
+
+            const prompt = `${formatDecimal(dividend)} / ${divisor} = ?`;
+            const traps = [
+                formatDecimal(correctResult * 10),
+                formatDecimal(correctResult / 10),
+                formatDecimal(correctResult * 100),
+                formatDecimal(correctResult + 0.1)
+            ];
+
+            return {
+                id: `dec-${difficulty}-div-${stringToSeed(ctx.nodeId)}`,
+                prompt,
+                correctAnswers: [formatDecimal(correctResult)],
+                wrongAnswers: uniqueWrongAnswers([formatDecimal(correctResult)], traps, 4),
+                topic: themeKey,
+                difficulty,
+            };
+        }
     }
 
-    // 3. SČÍTÁNÍ A ODČÍTÁNÍ DESETINNÝCH ČÍSEL
     if (variant === 'add' || variant === 'subtract') {
         const isAdd = variant === 'add';
-        const factor = floor >= 3 ? 100 : 10;
+        const factor = difficulty >= 3 ? 100 : 10;
 
-        // Cíleně generujeme tak, aby vznikala potřeba zarovnávat čárku nebo přecházet desítku
         const a = pick(rng, [int(rng, 1, 50), int(rng, 10, 200) / factor]);
-        const b = int(rng, 10, 99) / 10;
+        let b = int(rng, 10, 99) / 10;
 
-        // Zajištění, aby výsledek odčítání nebyl záporný
+        if (Number.isInteger(b)) {
+            b += pick(rng, [0.3, 0.5, 0.7]);
+        }
+
         const left = isAdd ? a : Math.max(a, b);
         const right = isAdd ? b : Math.min(a, b);
 
@@ -165,7 +234,6 @@ export function buildDecimalsProblem(ctx: ProblemBuilderContext): ApiProblemDto 
         };
     }
 
-    // 4. PŘEVOD ZLOMKU NA DESETINNÉ ČÍSLO
     const denominator = pick(rng, FRACTION_DENOMINATORS);
     const numerator = int(rng, 1, denominator - 1);
     const result = numerator / denominator;
@@ -173,9 +241,9 @@ export function buildDecimalsProblem(ctx: ProblemBuilderContext): ApiProblemDto 
 
     const correctStr = formatDecimal(result);
     const wrongAnswers = [
-        formatDecimal(result / 10), // Chyba v řádu (např. 0.06 místo 0.6)
+        formatDecimal(result / 10),
         formatDecimal(result * 10),
-        formatDecimal((numerator * 2) / 100), // Různé divoké odhady
+        formatDecimal((numerator * 2) / 100),
         formatDecimal(numerator / 10)
     ];
 

@@ -4,121 +4,127 @@ import {
     int, pick, stringToSeed, uniqueWrongAnswers, formatDecimal
 } from './utils';
 
-// ==========================================
-// KONFIGURACE PŘEVODNÍCH MŮSTKŮ
-// ==========================================
+type UnitCategory = 'length' | 'weight' | 'liquid' | 'time' | 'area';
 
-// Převody metrického systému (posuny čárky) - Max 3 řády
-const METRIC_CONVERSIONS = [
-    {from: 'mm', to: 'cm', factor: 0.1},
-    {from: 'cm', to: 'mm', factor: 10},
-    {from: 'cm', to: 'm', factor: 0.01},
-    {from: 'm', to: 'cm', factor: 100},
-    {from: 'm', to: 'km', factor: 0.001},
-    {from: 'km', to: 'm', factor: 1000},
-    {from: 'g', to: 'kg', factor: 0.001},
-    {from: 'kg', to: 'g', factor: 1000},
-    {from: 'ml', to: 'l', factor: 0.001},
-    {from: 'l', to: 'ml', factor: 1000}
-];
-
-// Převody času (zde se nesmí aplikovat metrické chytáky s posunem čárky)
-const TIME_CONVERSIONS = [
-    {from: 'min', to: 's', factor: 60},
-    {from: 'h', to: 'min', factor: 60}
-];
-
-// ==========================================
-// POMOCNÉ FUNKCE PRO CHYTÁKY A HODNOTY
-// ==========================================
-
-// Generuje náhodnou hodnotu (celá čísla i desetinná)
-function generateMetricValue(rng: () => number, floor: number): number {
-    // Na vyšších patrech je větší šance na desetinná čísla
-    const useDecimal = floor >= 3 ? pick(rng, [true, false]) : pick(rng, [false, false, true]);
-    const base = int(rng, 11, 999); // Např. 372
-    return useDecimal ? base / 10 : base; // Buď 372 nebo 37.2
+interface Conversion {
+    from: string;
+    to: string;
+    factor: number;
+    category: UnitCategory;
+    minDiff: number;
+    squareTrap?: boolean;
 }
 
-// Chytáky pro metrický systém (posuny čárky a opačné operace)
-function generateMetricTraps(value: number, correct: number, factor: number): string[] {
+const CONVERSIONS: Conversion[] = [
+    {from: 'cm', to: 'm', factor: 0.01, category: 'length', minDiff: 1},
+    {from: 'm', to: 'cm', factor: 100, category: 'length', minDiff: 1},
+    {from: 'm', to: 'km', factor: 0.001, category: 'length', minDiff: 1},
+    {from: 'km', to: 'm', factor: 1000, category: 'length', minDiff: 1},
+    {from: 'mm', to: 'cm', factor: 0.1, category: 'length', minDiff: 2},
+    {from: 'cm', to: 'mm', factor: 10, category: 'length', minDiff: 2},
+    {from: 'mm', to: 'm', factor: 0.001, category: 'length', minDiff: 3},
+    {from: 'm', to: 'mm', factor: 1000, category: 'length', minDiff: 3},
+    {from: 'g', to: 'kg', factor: 0.001, category: 'weight', minDiff: 1},
+    {from: 'kg', to: 'g', factor: 1000, category: 'weight', minDiff: 1},
+    {from: 'dag', to: 'g', factor: 10, category: 'weight', minDiff: 2},
+    {from: 'g', to: 'dag', factor: 0.1, category: 'weight', minDiff: 2},
+    {from: 'kg', to: 't', factor: 0.001, category: 'weight', minDiff: 2},
+    {from: 't', to: 'kg', factor: 1000, category: 'weight', minDiff: 2},
+    {from: 'ml', to: 'l', factor: 0.001, category: 'liquid', minDiff: 1},
+    {from: 'l', to: 'ml', factor: 1000, category: 'liquid', minDiff: 1},
+    {from: 'dl', to: 'l', factor: 0.1, category: 'liquid', minDiff: 2},
+    {from: 'l', to: 'dl', factor: 10, category: 'liquid', minDiff: 2},
+    {from: 'min', to: 's', factor: 60, category: 'time', minDiff: 1},
+    {from: 'h', to: 'min', factor: 60, category: 'time', minDiff: 1},
+    {from: 's', to: 'min', factor: 1/60, category: 'time', minDiff: 2},
+    {from: 'min', to: 'h', factor: 1/60, category: 'time', minDiff: 2},
+    {from: 'h', to: 's', factor: 3600, category: 'time', minDiff: 3},
+    {from: 'cm²', to: 'm²', factor: 0.0001, category: 'area', minDiff: 2, squareTrap: true},
+    {from: 'm²', to: 'cm²', factor: 10000, category: 'area', minDiff: 2, squareTrap: true},
+    {from: 'm²', to: 'a', factor: 0.01, category: 'area', minDiff: 3},
+    {from: 'a', to: 'm²', factor: 100, category: 'area', minDiff: 3},
+    {from: 'a', to: 'ha', factor: 0.01, category: 'area', minDiff: 3},
+    {from: 'ha', to: 'a', factor: 100, category: 'area', minDiff: 3},
+    {from: 'ha', to: 'km²', factor: 0.01, category: 'area', minDiff: 4},
+    {from: 'km²', to: 'ha', factor: 100, category: 'area', minDiff: 4}
+];
+
+function generateInputValue(rng: () => number, conv: Conversion, diff: number): number {
+    const step = conv.factor < 1 ? Math.round(1 / conv.factor) : 1;
+    if (conv.category === 'time') {
+        if (step === 1) return int(rng, 2, conv.factor >= 3600 ? 5 : 12 + diff * 3);
+        return int(rng, 1, Math.max(2, Math.min(12, Math.floor(900 / step)))) * step;
+    }
+    const maxN = step > 1 ? Math.max(2, Math.min(20, Math.floor(90_000 / step))) : 15 + diff * 5;
+    if (diff === 1) return step > 1 ? int(rng, 1, Math.min(maxN, 12)) * step : int(rng, 2, 15);
+    if (diff === 2) return step > 1 ? (pick(rng, [true, true, false]) ? int(rng, 1, maxN) * step : int(rng, 1, maxN) * step + Math.round(step / 2)) : int(rng, 2, 50);
+    const n = int(rng, 1, maxN);
+    return pick(rng, [true, false]) ? n * step : n * step + Math.round(step / 2);
+}
+
+function generateTraps(value: number, correct: number, conv: Conversion): string[] {
     const traps = new Set<string>();
+    const correctStr = formatDecimal(correct);
 
-    // 1. Žák udělá inverzní operaci (násobí místo dělení a naopak)
-    // Abychom se vyhnuli float precision chybám, použijeme podíl
-    const inverseValue = factor > 1 ? value / factor : value * (1 / factor);
-    traps.add(formatDecimal(inverseValue));
-
-    // 2. Špatný řád - posun o 1 místo nahoru a dolů od správného výsledku
+    traps.add(formatDecimal(conv.factor > 1 ? value / conv.factor : value * (1 / conv.factor)));
     traps.add(formatDecimal(correct * 10));
     traps.add(formatDecimal(correct / 10));
-
-    // 3. Špatný řád - posun o 2 místa (časté u převodů z mm na m nebo g na kg)
-    if (factor === 1000 || factor === 0.001) {
-        traps.add(formatDecimal(correct / 100));
-        traps.add(formatDecimal(correct * 100));
-    }
-
-    // 4. Dítě jen opíše číslo a ignoruje převod
     traps.add(formatDecimal(value));
 
-    // Vyčistíme od případné správné odpovědi
-    return Array.from(traps).filter(t => t !== formatDecimal(correct));
+    if (conv.squareTrap) {
+        const lin = Math.sqrt(conv.factor > 1 ? conv.factor : 1 / conv.factor);
+        traps.add(formatDecimal(conv.factor > 1 ? value * lin : value / lin));
+    }
+
+    return Array.from(traps).filter(t => t !== correctStr && parseFloat(t.replace(',', '.')) > 0);
 }
 
-// ==========================================
-// HLAVNÍ GENERÁTOR
-// ==========================================
-
 export function buildUnitConversionsProblem(ctx: ProblemBuilderContext): ApiProblemDto {
-    const {rng, floor, difficulty, themeKey} = ctx;
+    const {rng, difficulty, themeKey} = ctx;
 
-    // Vybereme typ převodu. Čas necháváme jako vzácnější (např. 1 z 4 případů)
-    const isTime = pick(rng, [false, false, false, true]);
-
-    if (!isTime) {
-        // METRICKÝ SYSTÉM
-        const conv = pick(rng, METRIC_CONVERSIONS);
-        const value = generateMetricValue(rng, floor);
-        const correct = value * conv.factor;
-        const correctStr = formatDecimal(correct);
-
-        const prompt = `Převeď: ${formatDecimal(value)} ${conv.from} = ? ${conv.to}`;
-        const traps = generateMetricTraps(value, correct, conv.factor);
-
-        return {
-            id: `u-${difficulty}-${conv.from}-${conv.to}-${stringToSeed(ctx.nodeId)}`,
-            prompt,
-            correctAnswers: [correctStr],
-            wrongAnswers: uniqueWrongAnswers([correctStr], traps, 4),
-            topic: themeKey,
-            difficulty,
-        };
-
-    } else {
-        // ČAS (Zde držíme hezká celá čísla, např. 2 až 15 hodin/minut)
-        const conv = pick(rng, TIME_CONVERSIONS);
-        const value = int(rng, 2, 15 + floor * 2);
-        const correct = value * conv.factor;
-        const correctStr = formatDecimal(correct);
-
-        const prompt = `Převeď: ${value} ${conv.from} = ? ${conv.to}`;
-
-        // Zde nenasazujeme metrické chytáky, ale specifické pro čas (desítková soustava)
-        const traps = [
-            formatDecimal(value * 100), // Klasika: 3 minuty = 300 sekund
-            formatDecimal(value * 10),  // 3 minuty = 30 sekund
-            formatDecimal(Math.round(value / conv.factor)), // Inverzní a zaokrouhlené
-            formatDecimal(correct + 60) // Přidal šedesátku navíc
-        ];
-
-        return {
-            id: `u-${difficulty}-time-${conv.from}-${conv.to}-${stringToSeed(ctx.nodeId)}`,
-            prompt,
-            correctAnswers: [correctStr],
-            wrongAnswers: uniqueWrongAnswers([correctStr], traps, 4),
-            topic: themeKey,
-            difficulty,
-        };
+    if (difficulty >= 4) {
+        const isArea = pick(rng, [true, false]);
+        if (isArea) {
+            const v1 = int(rng, 1, 5);
+            const v2 = int(rng, 1, 5);
+            const res = (v1 + v2) * 10000;
+            const prompt = `Vypočítej ${v1} m² + ${v2} m² v cm²:`;
+            return {
+                id: `u-${difficulty}-boss-area-${stringToSeed(ctx.nodeId)}`,
+                prompt,
+                correctAnswers: [formatDecimal(res)],
+                wrongAnswers: uniqueWrongAnswers([formatDecimal(res)], [formatDecimal(v1 + v2), formatDecimal((v1 + v2) * 100)], 4),
+                topic: themeKey,
+                difficulty,
+            };
+        } else {
+            const h = int(rng, 1, 2);
+            const m = pick(rng, [15, 20, 30, 45]);
+            const s = int(rng, 20, 50);
+            const res = (h * 3600) + (m * 60) + s;
+            const prompt = `Převeď na sekundy: ${h}h ${m}min ${s}s = ?`;
+            return {
+                id: `u-${difficulty}-boss-time-${stringToSeed(ctx.nodeId)}`,
+                prompt,
+                correctAnswers: [String(res)],
+                wrongAnswers: uniqueWrongAnswers([String(res)], [String((h + m + s)), String(res + 60)], 4),
+                topic: themeKey,
+                difficulty,
+            };
+        }
     }
+
+    const conv = pick(rng, CONVERSIONS.filter(c => c.minDiff <= difficulty));
+    const value = generateInputValue(rng, conv, difficulty);
+    const correct = value * conv.factor;
+    const correctStr = formatDecimal(correct);
+
+    return {
+        id: `u-${difficulty}-${conv.from}-${conv.to}-${stringToSeed(ctx.nodeId)}`,
+        prompt: `Převeď: ${formatDecimal(value)} ${conv.from} = ? ${conv.to}`,
+        correctAnswers: [correctStr],
+        wrongAnswers: uniqueWrongAnswers([correctStr], generateTraps(value, correct, conv), 4),
+        topic: themeKey,
+        difficulty,
+    };
 }

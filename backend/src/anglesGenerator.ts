@@ -4,49 +4,59 @@ import {
     int, pick, stringToSeed, uniqueWrongAnswers
 } from './utils';
 
-// ==========================================
-// POMOCNÉ FUNKCE PRO ÚHLY (CHYTÁKY)
-// ==========================================
-
-// Simuluje chyby při doplňování úhlů (chyba o 10, doplňování do 100 místo 90 atd.)
 function generateAngleTraps(target: number, current: number): string[] {
     const traps = new Set<string>();
     const correct = target - current;
 
-    // 1. Chyba o 10 (typická chyba při odčítání pod sebou)
     traps.add(String(correct + 10));
     traps.add(String(Math.max(1, correct - 10)));
 
-    // 2. Doplnění do špatného základu (100 místo 90, 200 místo 180)
     if (target === 90) {
-        traps.add(String(100 - current)); // Dítě doplňuje do stovky
-        traps.add(String(180 - current)); // Dítě si spletlo pravý a přímý úhel
-    } else if (target === 180) {
-        traps.add(String(200 - current)); // Dítě doplňuje do dvouset
-        traps.add(String(90 - current > 0 ? 90 - current : 360 - current));
+        traps.add(String(100 - current));
+        traps.add(String(180 - current));
     }
 
-    // 3. Dítě jen sečte čísla v zadání (pokud tam nějaká vidí)
     traps.add(String(target + current));
 
     return Array.from(traps).filter(t => t !== String(correct));
 }
 
-// ==========================================
-// HLAVNÍ GENERÁTOR
-// ==========================================
-
 export function buildAnglesProblem(ctx: ProblemBuilderContext): ApiProblemDto {
-    const {rng, floor, difficulty, themeKey} = ctx;
+    const {rng, difficulty, themeKey} = ctx;
 
-    // Klasifikace a doplňky na lehkých patrech, trojúhelníky a násobky na těžších
-    const variantsPool = floor <= 2
-        ? ['classification', 'complement', 'supplement']
-        : ['classification', 'triangle', 'multiples', 'complement', 'supplement'];
+    if (difficulty >= 4) {
+        const bossDeg = int(rng, 30, 140);
+        const bossMin = pick(rng, [15, 20, 30, 40, 45]);
+
+        const prompt = `Úhly alfa a beta jsou vedlejší. Úhel alfa měří ${bossDeg}° ${bossMin}'. Kolik měří úhel beta?`;
+
+        const correctDeg = 179 - bossDeg;
+        const correctMin = 60 - bossMin;
+        const correctStr = `${correctDeg}° ${correctMin}'`;
+
+        const traps = [
+            `${180 - bossDeg}° ${60 - bossMin}'`,
+            `${179 - bossDeg}° ${100 - bossMin}'`,
+            `${180 - bossDeg}° ${bossMin}'`,
+            `${correctDeg - 1}° ${correctMin}'`
+        ];
+
+        return {
+            id: `a-${difficulty}-boss-${stringToSeed(ctx.nodeId)}`,
+            prompt,
+            correctAnswers: [correctStr],
+            wrongAnswers: uniqueWrongAnswers([correctStr], traps, 4),
+            topic: themeKey,
+            difficulty,
+        };
+    }
+
+    const variantsPool = difficulty <= 1
+        ? ['classification', 'complement90']
+        : ['triangle', 'vertical', 'adjacent', 'degMinConv', 'degMinAdd', 'degMinSub'];
 
     const variant = pick(rng, variantsPool);
 
-    // 1. KLASIFIKACE ÚHLŮ (Ostrý, Tupý, atd.)
     if (variant === 'classification') {
         const angleTypes = [
             {name: 'Ostrý', min: 15, max: 89},
@@ -73,9 +83,8 @@ export function buildAnglesProblem(ctx: ProblemBuilderContext): ApiProblemDto {
         };
     }
 
-    // 2. DOPLNĚK DO PRAVÉHO ÚHLU
-    if (variant === 'complement') {
-        const angle = int(rng, 15, 75); // Hezká čísla, ne extrémy jako 2°
+    if (variant === 'complement90') {
+        const angle = int(rng, 15, 75);
         const result = 90 - angle;
         const prompt = `Doplň úhel ${angle}° do pravého úhlu = ?`;
 
@@ -84,73 +93,149 @@ export function buildAnglesProblem(ctx: ProblemBuilderContext): ApiProblemDto {
         return {
             id: `a-${difficulty}-comp-${stringToSeed(ctx.nodeId)}`,
             prompt,
-            correctAnswers: [String(result)],
-            wrongAnswers: uniqueWrongAnswers([String(result)], traps, 4),
+            correctAnswers: [`${result}°`],
+            wrongAnswers: uniqueWrongAnswers([`${result}°`], traps.map(t => `${t}°`), 4),
             topic: themeKey,
             difficulty,
         };
     }
 
-    // 3. DOPLNĚK DO PŘÍMÉHO ÚHLU
-    if (variant === 'supplement') {
+    if (variant === 'vertical') {
         const angle = int(rng, 25, 155);
-        const result = 180 - angle;
-        const prompt = `Doplň úhel ${angle}° do přímého úhlu = ?`;
-
-        const traps = generateAngleTraps(180, angle);
-
-        return {
-            id: `a-${difficulty}-supp-${stringToSeed(ctx.nodeId)}`,
-            prompt,
-            correctAnswers: [String(result)],
-            wrongAnswers: uniqueWrongAnswers([String(result)], traps, 4),
-            topic: themeKey,
-            difficulty,
-        };
-    }
-
-    // 4. TROJÚHELNÍK (Dopočet třetího úhlu)
-    if (variant === 'triangle') {
-        const a = int(rng, 30, 85); // Omezeno, aby trojúhelník fyzicky dával smysl
-        const b = int(rng, 30, 150 - a);
-        const result = 180 - a - b;
-        const prompt = `V trojúhelníku jsou dva úhly ${a}° a ${b}°. Kolik měří třetí?`;
+        const prompt = `Dvě přímky se protínají. Jeden z úhlů měří ${angle}°. Kolik měří jeho vrcholový úhel?`;
 
         const traps = [
-            String(a + b), // Dítě zapomnělo odečíst od 180, jen sečetlo
-            String(result + 10), // Aritmetická chyba při odčítání
+            `${180 - angle}°`,
+            `${90 - angle > 0 ? 90 - angle : 360 - angle}°`,
+            `${angle + 10}°`,
+            `${100 - angle > 0 ? 100 - angle : angle - 10}°`
+        ];
+
+        return {
+            id: `a-${difficulty}-vert-${stringToSeed(ctx.nodeId)}`,
+            prompt,
+            correctAnswers: [`${angle}°`],
+            wrongAnswers: uniqueWrongAnswers([`${angle}°`], traps, 4),
+            topic: themeKey,
+            difficulty,
+        };
+    }
+
+    if (variant === 'adjacent') {
+        const angle = int(rng, 25, 155);
+        const result = 180 - angle;
+        const prompt = `Dvě přímky se protínají. Jeden z úhlů měří ${angle}°. Kolik měří jeho vedlejší úhel?`;
+
+        const traps = generateAngleTraps(180, angle);
+        traps.push(String(angle));
+
+        return {
+            id: `a-${difficulty}-adj-${stringToSeed(ctx.nodeId)}`,
+            prompt,
+            correctAnswers: [`${result}°`],
+            wrongAnswers: uniqueWrongAnswers([`${result}°`], traps.map(t => `${t}°`), 4),
+            topic: themeKey,
+            difficulty,
+        };
+    }
+
+    if (variant === 'triangle') {
+        const a = int(rng, 30, 85);
+        const b = int(rng, 30, 150 - a);
+        const result = 180 - a - b;
+        const prompt = `V trojúhelníku jsou úhly ${a}° a ${b}°. Kolik měří třetí?`;
+
+        const traps = [
+            String(a + b),
+            String(result + 10),
             String(Math.max(1, result - 10)),
-            String(360 - a - b) // Dítě si spletlo součet úhlů s čtyřúhelníkem
+            String(360 - a - b)
         ];
 
         return {
             id: `a-${difficulty}-tri-${stringToSeed(ctx.nodeId)}`,
             prompt,
-            correctAnswers: [String(result)],
-            wrongAnswers: uniqueWrongAnswers([String(result)], traps, 4),
+            correctAnswers: [`${result}°`],
+            wrongAnswers: uniqueWrongAnswers([`${result}°`], traps.map(t => `${t}°`), 4),
             topic: themeKey,
             difficulty,
         };
     }
 
-    // 5. NÁSOBKY PRAVÉHO ÚHLU
-    // Původní dobrý nápad z formulas.pdf
-    const multiples = int(rng, 2, 5);
-    const result = multiples * 90;
-    const prompt = `Kolik stupňů mají dohromady ${multiples} pravé úhly?`;
+    if (variant === 'degMinConv') {
+        const degrees = int(rng, 2, 5);
+        const minutes = pick(rng, [15, 20, 30, 45]);
+        const correct = (degrees * 60) + minutes;
 
-    const wrongAnswers = [
-        String(multiples * 60), // Dítě si to plete s časem (hodinami)
-        String(multiples * 100), // Dítě bere pravý úhel jako 100
-        String((multiples + 1) * 90),
-        String(180) // Fixní chyták
+        const prompt = `Převeď na minuty: ${degrees}° ${minutes}' = ?`;
+        const traps = [
+            String((degrees * 100) + minutes),
+            String(degrees * 60),
+            String(degrees + minutes),
+            String((degrees * 60) + 100)
+        ];
+
+        return {
+            id: `a-${difficulty}-dmc-${stringToSeed(ctx.nodeId)}`,
+            prompt,
+            correctAnswers: [`${correct}'`],
+            wrongAnswers: uniqueWrongAnswers([`${correct}'`], traps.map(t => `${t}'`), 4),
+            topic: themeKey,
+            difficulty,
+        };
+    }
+
+    if (variant === 'degMinAdd') {
+        const minA = pick(rng, [40, 45, 50]);
+        const minB = pick(rng, [25, 30, 35]);
+        const degA = int(rng, 1, 5);
+        const degB = int(rng, 1, 3);
+
+        const totalMinutes = minA + minB;
+        const overflowDegrees = Math.floor(totalMinutes / 60);
+        const remainderMinutes = totalMinutes % 60;
+
+        const prompt = `Sečti: ${degA}° ${minA}' + ${degB}° ${minB}' = ?`;
+        const correctStr = `${degA + degB + overflowDegrees}° ${remainderMinutes}'`;
+
+        const traps = [
+            `${degA + degB}° ${totalMinutes}'`,
+            `${degA + degB + 1}° ${totalMinutes - 100}'`,
+            `${degA + degB + overflowDegrees}° ${remainderMinutes + 10}'`
+        ];
+
+        return {
+            id: `a-${difficulty}-dma-${stringToSeed(ctx.nodeId)}`,
+            prompt,
+            correctAnswers: [correctStr],
+            wrongAnswers: uniqueWrongAnswers([correctStr], traps, 4),
+            topic: themeKey,
+            difficulty,
+        };
+    }
+
+    const deg1 = int(rng, 5, 12);
+    const min1 = pick(rng, [10, 15, 20]);
+    const deg2 = int(rng, 1, deg1 - 2);
+    const min2 = pick(rng, [40, 45, 50]);
+
+    const prompt = `Odečti: ${deg1}° ${min1}' - ${deg2}° ${min2}' = ?`;
+
+    const correctDeg = deg1 - 1 - deg2;
+    const correctMin = min1 + 60 - min2;
+    const correctStr = `${correctDeg}° ${correctMin}'`;
+
+    const traps = [
+        `${deg1 - deg2}° ${min1 + 60 - min2}'`,
+        `${deg1 - 1 - deg2}° ${min1 + 100 - min2}'`,
+        `${deg1 - deg2}° ${min2 - min1}'`
     ];
 
     return {
-        id: `a-${difficulty}-mult-${stringToSeed(ctx.nodeId)}`,
+        id: `a-${difficulty}-dms-${stringToSeed(ctx.nodeId)}`,
         prompt,
-        correctAnswers: [String(result)],
-        wrongAnswers: uniqueWrongAnswers([String(result)], wrongAnswers, 4),
+        correctAnswers: [correctStr],
+        wrongAnswers: uniqueWrongAnswers([correctStr], traps, 4),
         topic: themeKey,
         difficulty,
     };

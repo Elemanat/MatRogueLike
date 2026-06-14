@@ -1,32 +1,13 @@
-import type {ApiProblemDto} from './contracts'; // Uprav cestu
-import type {ProblemBuilderContext} from './problemGenerator'; // Uprav cestu
-import {int, pick, stringToSeed, uniqueIntegers} from './utils'; // Předpokládám import utilit
+import type {ApiProblemDto} from './contracts';
+import type {ProblemBuilderContext} from './problemGenerator';
+import {
+    int, pick, stringToSeed, uniqueIntegers, uniqueWrongAnswers
+} from './utils';
 
-// ==========================================
-// KONFIGURACE A MAGICKÁ ČÍSLA
-// ==========================================
-
-// Odebrány 2, 3 a 5, aby to nebylo trapně jednoduché
-const PRIMES = [7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
-const PSEUDO_PRIMES = [9, 15, 21, 25, 27, 33, 35, 39, 49, 51, 55, 57, 63, 65, 69, 75, 77, 81, 85, 87, 91, 93, 95];
-
-const DIVISORS_EASY = [2, 3, 5, 10];
-const DIVISORS_HARD = [4, 6, 8, 9];
-
-// Hezké páry pro NSN a NSD (aby z hlavy nevycházela monstra)
-const GCD_LCM_PAIRS = [
-    {a: 4, b: 6, gcd: 2, lcm: 12},
-    {a: 6, b: 8, gcd: 2, lcm: 24},
-    {a: 6, b: 9, gcd: 3, lcm: 18},
-    {a: 8, b: 12, gcd: 4, lcm: 24},
-    {a: 12, b: 15, gcd: 3, lcm: 60},
-    {a: 15, b: 20, gcd: 5, lcm: 60},
-    {a: 12, b: 18, gcd: 6, lcm: 36},
-];
-
-// ==========================================
-// POMOCNÉ FUNKCE PRO TUTO VĚŽ
-// ==========================================
+const PRIMES_EASY = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29];
+const PRIMES_MED = [31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+const PRIMES_HARD = [101, 103, 107, 109, 113, 127, 131, 137, 139, 149];
+const PSEUDO_PRIMES = [39, 49, 51, 57, 69, 87, 91, 93, 111, 115, 117, 119, 121, 123, 133, 143];
 
 function getDigitSum(n: number): number {
     let sum = 0;
@@ -38,71 +19,151 @@ function getDigitSum(n: number): number {
     return sum;
 }
 
-// Geniální generátor chytáků - simuluje reálné chyby žáků
-function generateSmartDivisibilityTraps(divisor: number, correct: number, rng: () => number): string[] {
-    const traps = new Set<number>();
+function generateDivisibilityTraps(divisor: number, correct: number, rng: () => number): string[] {
+    const traps = new Set<string>();
     let attempts = 0;
 
-    while (traps.size < 4 && attempts < 100) {
+    while (traps.size < 4 && attempts < 150) {
         attempts++;
-        if (divisor === 3 || divisor === 9) {
-            // Žák blbě sečte ciferný součet (netrefí se o 1 nebo 2)
-            const trap = divisor * int(rng, 4, 25) + pick(rng, [1, divisor - 1]);
-            if (trap !== correct) traps.add(trap);
-        } else if (divisor === 6) {
-            // Žák testuje jen sudost, NEBO jen dělitelnost 3
-            const trap = pick(rng, [
-                2 * int(rng, 5, 25), // Je to sudé, ale není dělitelné 3 (např. 14)
-                3 * pick(rng, [3, 5, 7, 9, 11]) // Je to dělitelné 3, ale je to liché (např. 15, 21)
-            ]);
-            if (trap % 6 !== 0 && trap !== correct) traps.add(trap);
+        let trap = 0;
+
+        if (divisor === 4) {
+            const prefix = int(rng, 1, 9) * 100;
+            const suffix = pick(rng, [14, 34, 54, 74, 94, 22, 42, 62, 82]);
+            trap = prefix + suffix;
         } else if (divisor === 8) {
-            // Žák si plete 8 a 4
-            const trap = 4 * pick(rng, [3, 5, 7, 9, 11, 13]); // např. 12, 20, 28
-            if (trap % 8 !== 0 && trap !== correct) traps.add(trap);
+            const prefix = int(rng, 1, 9) * 100;
+            const suffix = pick(rng, [18, 28, 38, 58, 68, 78, 98, 12, 36, 44]);
+            trap = prefix + suffix;
+        } else if (divisor === 3 || divisor === 9) {
+            trap = divisor * int(rng, 4, 30) + pick(rng, [1, divisor - 1]);
+        } else if (divisor === 6) {
+            trap = pick(rng, [
+                2 * int(rng, 5, 25),
+                3 * pick(rng, [3, 5, 7, 9, 11, 13])
+            ]);
         } else {
-            // Univerzální fallback pro 2, 4, 5, 10
-            const trap = divisor * int(rng, 3, 20) + pick(rng, [1, 2, divisor - 1]);
-            if (trap !== correct && trap % divisor !== 0) traps.add(trap);
+            trap = divisor * int(rng, 3, 30) + pick(rng, [1, 2, divisor - 1]);
+        }
+
+        if (trap !== correct && trap % divisor !== 0) {
+            traps.add(String(trap));
         }
     }
-    return Array.from(traps).map(String);
+    return Array.from(traps);
 }
 
-// ==========================================
-// HLAVNÍ GENERÁTOR
-// ==========================================
-
 export function buildDivisibilityProblem(ctx: ProblemBuilderContext): ApiProblemDto {
-    const {rng, floor, difficulty, themeKey} = ctx;
+    const {rng, difficulty, themeKey} = ctx;
 
-    // Určení šablony - v závislosti na patře pouštíme různé typy úloh
-    const templatesPool = floor <= 2
-        ? ['divisible', 'prime', 'digit-sum']
-        : ['divisible', 'prime', 'not-prime', 'gcd-lcm', 'digit-sum'];
+    if (difficulty >= 4) {
+        const bossType = pick(rng, ['combo', 'hard-prime']);
 
-    const variant = pick(rng, templatesPool);
+        if (bossType === 'combo') {
+            const pairs = [{a: 3, b: 4}, {a: 2, b: 5}, {a: 3, b: 5}];
+            const pair = pick(rng, pairs);
+            const lcm = pair.a * pair.b;
+            const correct = lcm * int(rng, 2, 9);
+            const prompt = `Které z čísel je dělitelné číslem ${pair.a} A ZÁROVEŇ číslem ${pair.b}?`;
 
-    // 1. ZÁKLADNÍ DĚLITELNOST
-    if (variant === 'divisible') {
-        const divisor = pick(rng, floor <= 2 ? DIVISORS_EASY : DIVISORS_HARD);
-        const correct = divisor * int(rng, 4, 15 + difficulty * 2);
+            const traps = new Set<string>();
+            while (traps.size < 3) {
+                const t1 = pair.a * int(rng, 3, 20);
+                if (t1 % pair.b !== 0 && t1 !== correct) traps.add(String(t1));
+
+                const t2 = pair.b * int(rng, 3, 20);
+                if (t2 % pair.a !== 0 && t2 !== correct) traps.add(String(t2));
+            }
+
+            return {
+                id: `d-${difficulty}-bosscombo-${stringToSeed(ctx.nodeId)}`,
+                prompt,
+                correctAnswers: [String(correct)],
+                wrongAnswers: uniqueWrongAnswers([String(correct)], Array.from(traps), 4),
+                topic: themeKey,
+                difficulty,
+            };
+        } else {
+            const correct = pick(rng, PRIMES_HARD);
+            const prompt = 'Které z těchto velkých čísel je ve skutečnosti PRVOČÍSLO?';
+            const wrongPool = uniqueIntegers(rng, PSEUDO_PRIMES, 4, val => val !== correct);
+
+            return {
+                id: `d-${difficulty}-bossprime-${stringToSeed(ctx.nodeId)}`,
+                prompt,
+                correctAnswers: [String(correct)],
+                wrongAnswers: wrongPool.map(String),
+                topic: themeKey,
+                difficulty,
+            };
+        }
+    }
+
+    let variantsPool: string[] = [];
+    if (difficulty === 1) {
+        variantsPool = ['divisible-easy', 'digit-sum', 'prime-easy'];
+    } else if (difficulty === 2) {
+        variantsPool = ['divisible-med', 'prime-med', 'not-prime', 'gcd-lcm', 'digit-sum'];
+    } else {
+        variantsPool = ['divisible-hard', 'prime-med', 'not-prime', 'gcd-lcm'];
+    }
+
+    const variant = pick(rng, variantsPool);
+
+    if (variant.startsWith('divisible')) {
+        let divisorPool: number[] = [];
+        if (variant === 'divisible-easy') divisorPool = [2, 5, 10];
+        if (variant === 'divisible-med') divisorPool = [3, 4, 9];
+        if (variant === 'divisible-hard') divisorPool = [6, 8];
+
+        const divisor = pick(rng, divisorPool);
+        let correct = divisor * int(rng, 4, 25);
+
+        if (divisor === 8 && correct < 100) {
+            correct += 104;
+        }
+
         const prompt = `Které z čísel je dělitelné číslem ${divisor}?`;
-        const wrongAnswers = generateSmartDivisibilityTraps(divisor, correct, rng);
+        const wrongAnswers = generateDivisibilityTraps(divisor, correct, rng);
 
         return {
-            id: `d-${difficulty}-div-${divisor}-${stringToSeed(ctx.nodeId)}`,
+            id: `d-${difficulty}-div${divisor}-${stringToSeed(ctx.nodeId)}`,
             prompt,
             correctAnswers: [String(correct)],
-            wrongAnswers,
+            wrongAnswers: uniqueWrongAnswers([String(correct)], wrongAnswers, 4),
             topic: themeKey,
             difficulty,
         };
     }
 
-    // 2. KLASICKÁ PRVOČÍSLA
-    if (variant === 'prime') {
-        const correct = pick(rng, PRIMES.filter(p => floor <= 2 ? p < 30 : p >= 30));
+    if (variant === 'digit-sum') {
+        const num = int(rng, 105, 999);
+        const correct = getDigitSum(num);
+        const prompt = `Jaký je ciferný součet čísla ${num}?`;
+
+        const numStr = String(num);
+        let partialSum = 0;
+        if (numStr.length >= 2) partialSum = Number(numStr[0]) + Number(numStr[1]);
+
+        const traps = [
+            String(partialSum),
+            String(correct + 1),
+            String(Math.max(1, correct - 1)),
+            String(correct + 9)
+        ];
+
+        return {
+            id: `d-${difficulty}-digitsum-${stringToSeed(ctx.nodeId)}`,
+            prompt,
+            correctAnswers: [String(correct)],
+            wrongAnswers: uniqueWrongAnswers([String(correct)], traps, 4),
+            topic: themeKey,
+            difficulty,
+        };
+    }
+
+    if (variant === 'prime-easy' || variant === 'prime-med') {
+        const correct = pick(rng, variant === 'prime-easy' ? PRIMES_EASY : PRIMES_MED);
         const prompt = 'Které z čísel je prvočíslo?';
         const wrongPool = uniqueIntegers(rng, PSEUDO_PRIMES, 4, val => val !== correct);
 
@@ -116,11 +177,10 @@ export function buildDivisibilityProblem(ctx: ProblemBuilderContext): ApiProblem
         };
     }
 
-    // 3. NEGACE (NENÍ PRVOČÍSLO)
     if (variant === 'not-prime') {
-        const correct = pick(rng, PSEUDO_PRIMES); // Např. 51
+        const correct = pick(rng, PSEUDO_PRIMES.filter(p => p < 100));
         const prompt = 'Které z těchto čísel NENÍ prvočíslo?';
-        const wrongPool = uniqueIntegers(rng, PRIMES, 4, val => val !== correct); // Distraktory jsou opravdová prvočísla
+        const wrongPool = uniqueIntegers(rng, PRIMES_MED, 4, val => val !== correct);
 
         return {
             id: `d-${difficulty}-notprime-${stringToSeed(ctx.nodeId)}`,
@@ -132,59 +192,57 @@ export function buildDivisibilityProblem(ctx: ProblemBuilderContext): ApiProblem
         };
     }
 
-    // 4. CIFERNÝ SOUČET (Ušito na míru)
-    if (variant === 'digit-sum') {
-        const num = int(rng, 105, 999);
-        const correct = getDigitSum(num);
-        const prompt = `Jaký je ciferný součet čísla ${num}?`;
+    if (variant === 'gcd-lcm') {
+        const isGcd = pick(rng, [true, false]);
 
-        // Lživé odpovědi simulují přičtení čísla navíc, nebo špatný výpočet
-        const wrongPool = [
-            String(correct + 1),
-            String(Math.max(1, correct - 1)),
-            String(correct + 9),
-            String(correct + 2)
-        ];
+        const mPairs = [[2, 3], [2, 5], [3, 4], [3, 5], [4, 5], [5, 6]];
+        const m = pick(rng, mPairs);
+        const g = int(rng, 2, 8);
+        const a = g * m[0]!;
+        const b = g * m[1]!;
 
-        return {
-            id: `d-${difficulty}-digitsum-${stringToSeed(ctx.nodeId)}`,
-            prompt,
-            correctAnswers: [String(correct)],
-            wrongAnswers: wrongPool,
-            topic: themeKey,
-            difficulty,
-        };
+        if (isGcd) {
+            const prompt = `Najdi největšího společného dělitele (NSD) čísel ${a} a ${b}.`;
+            const traps = [
+                String(g * 2),
+                String(a),
+                "1",
+                String(g + 1)
+            ];
+            return {
+                id: `d-${difficulty}-gcd-${stringToSeed(ctx.nodeId)}`,
+                prompt,
+                correctAnswers: [String(g)],
+                wrongAnswers: uniqueWrongAnswers([String(g)], traps, 4),
+                topic: themeKey,
+                difficulty,
+            };
+        } else {
+            const prompt = `Najdi nejmenší společný násobek (NSN) čísel ${a} a ${b}.`;
+            const correct = g * m[0]! * m[1]!;
+            const traps = [
+                String(a * b),
+                String(correct + a),
+                String(correct / 2),
+                String(a + b)
+            ];
+            return {
+                id: `d-${difficulty}-lcm-${stringToSeed(ctx.nodeId)}`,
+                prompt,
+                correctAnswers: [String(correct)],
+                wrongAnswers: uniqueWrongAnswers([String(correct)], traps, 4),
+                topic: themeKey,
+                difficulty,
+            };
+        }
     }
 
-    // 5. NSD a NSN (Největší společný dělitel / Nejmenší společný násobek)
-    const subVariant = pick(rng, ['gcd', 'lcm']);
-    const pair = pick(rng, GCD_LCM_PAIRS);
-
-    if (subVariant === 'gcd') {
-        const prompt = `Najdi největšího společného dělitele (NSD) čísel ${pair.a} a ${pair.b}.`;
-        const correct = pair.gcd;
-        // Chytáky: jakýkoliv menší dělitel, nebo součet, nebo 1
-        const wrongPool = [String(correct + 1), "1", String(correct * 2), String(pair.a)];
-        return {
-            id: `d-${difficulty}-gcd-${stringToSeed(ctx.nodeId)}`,
-            prompt,
-            correctAnswers: [String(correct)],
-            wrongAnswers: Array.from(new Set(wrongPool)).filter(w => w !== String(correct)).slice(0, 4),
-            topic: themeKey,
-            difficulty,
-        };
-    } else {
-        const prompt = `Najdi nejmenší společný násobek (NSN) čísel ${pair.a} a ${pair.b}.`;
-        const correct = pair.lcm;
-        // Chytáky: prosté vynásobení čísel (častá chyba dětí!), nebo polovina, nebo součet
-        const wrongPool = [String(pair.a * pair.b), String(correct + pair.a), String(correct - pair.b), String(pair.a + pair.b)];
-        return {
-            id: `d-${difficulty}-lcm-${stringToSeed(ctx.nodeId)}`,
-            prompt,
-            correctAnswers: [String(correct)],
-            wrongAnswers: Array.from(new Set(wrongPool)).filter(w => w !== String(correct)).slice(0, 4),
-            topic: themeKey,
-            difficulty,
-        };
-    }
+    return {
+        id: `d-fallback-${stringToSeed(ctx.nodeId)}`,
+        prompt: "Nouzový příklad: Kolik je 1 + 1?",
+        correctAnswers: ["2"],
+        wrongAnswers: ["1", "3", "4"],
+        topic: themeKey,
+        difficulty,
+    };
 }

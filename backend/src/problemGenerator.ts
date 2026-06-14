@@ -9,10 +9,6 @@ import {
     parseAnswer, answersEquivalent
 } from './utils';
 
-// ==========================================
-// ROZHRANÍ A KONTEXT
-// ==========================================
-
 export interface ProblemGenerationRequest {
     towerId: string;
     floor: number;
@@ -31,10 +27,6 @@ export interface ProblemBuilderContext {
 }
 
 type ProblemBuilder = (ctx: ProblemBuilderContext) => ApiProblemDto;
-
-// ==========================================
-// KONFIGURACE ROUTOVÁNÍ
-// ==========================================
 
 const TOWER_THEME_MAP: Record<string, string> = {
     'divisibility-primes': 'divisibility-primes',
@@ -65,12 +57,7 @@ const THEME_BUILDERS: Record<string, ProblemBuilder> = {
     'angles-degrees': buildAnglesProblem,
 };
 
-// ==========================================
-// POMOCNÉ FUNKCE PRO ROUTER
-// ==========================================
-
 function tierIndexFromFloor(floor: number): number {
-    // 1. a 2. patro = obtížnost 1; 3. a 4. patro = obtížnost 2; 5+ = obtížnost 3
     if (floor <= 2) return 1;
     if (floor <= 4) return 2;
     return 3;
@@ -87,19 +74,22 @@ function resolveThemeKey(towerId: string): string {
                             : 'fractions');
 }
 
-// ==========================================
-// HLAVNÍ EXPORTOVANÉ FUNKCE (API)
-// ==========================================
-
 export function generateProblem(request: ProblemGenerationRequest): ApiProblemDto {
     const themeKey = resolveThemeKey(request.towerId);
 
-    // Zapojení nodeId do seedu zajišťuje absolutní unikátnost každého boje
     const seed = `${themeKey}:${request.floor}:${request.nodeId}:${request.enemyType}:${request.seed ?? ''}`;
     const rng = createRng(seed);
 
     const baseTier = tierIndexFromFloor(request.floor);
-    const difficulty = clamp(baseTier + (request.enemyType === 'MINIBOSS' ? 1 : request.enemyType === 'BOSS' ? 2 : 0), 1, 6);
+
+    let difficulty = baseTier;
+    if (request.enemyType === 'BOSS') {
+        difficulty = 4;
+    } else if (request.enemyType === 'MINIBOSS') {
+        difficulty = baseTier + 1;
+    }
+
+    difficulty = clamp(difficulty, 1, 6);
 
     const ctx: ProblemBuilderContext = {
         rng,
@@ -116,7 +106,7 @@ export function generateProblem(request: ProblemGenerationRequest): ApiProblemDt
         return builder(ctx);
     }
 
-    return buildFractionProblem(ctx); // Fallback
+    return buildFractionProblem(ctx);
 }
 
 export function isEquivalentAnswer(selected: string, correct: string): boolean {
@@ -127,7 +117,6 @@ export function generateProblems(request: ProblemGenerationRequest, count = 10):
     const problems: ApiProblemDto[] = [];
     for (let i = 0; i < count; i++) {
         const seed = `${request.seed ?? ''}:${i}`;
-        // Pro hromadné testování generujeme fiktivní nodeId pomocí indexu
         problems.push(generateProblem({...request, nodeId: `test-node-${i}`, seed}));
     }
     return problems;
@@ -141,7 +130,6 @@ export function validateProblem(p: ApiProblemDto): string[] {
 
     const canonical = parseAnswer(p.correctAnswers[0] ?? '');
     if (canonical === null) {
-        // Ne-numerické odpovědi netestujeme
     } else {
         for (const ca of p.correctAnswers) {
             if (!answersEquivalent(ca, String(canonical))) {
