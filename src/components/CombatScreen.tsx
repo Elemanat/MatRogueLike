@@ -149,7 +149,8 @@ export const CombatScreen: React.FC<Props> = ({
     }, [hasAnswered, onAnswer, problem.correctAnswers]);
 
     return (
-        <div className="flex flex-col h-full px-3 py-3 gap-3 relative">
+        // Hlavní kontejner – přepíná mezi jedním (mobil) a dvěma (desktop) sloupci
+        <div className="flex flex-col md:flex-row h-full px-3 py-3 gap-5 relative w-full items-stretch overflow-y-auto">
 
             {/* ADD_TIME toast */}
             {showTimeToast && (
@@ -190,64 +191,75 @@ export const CombatScreen: React.FC<Props> = ({
                 </div>
             )}
 
-            {/* Nepřítel */}
-            <div className="sketch-box px-3 py-2">
-                <div className="flex justify-between items-center mb-1">
-                    <span className="text-xl font-bold" style={{color: enemyColor}}>{enemy.name}</span>
-                    <HealthBar health={enemy.hp} maxHealth={enemy.maxHp}/>
-                </div>
-                {enemy.maxHp > 1 && (
-                    <div className="hp-bar-track" style={{height: '0.6rem'}}>
-                        <div className="hp-bar-fill" style={{width: `${(enemy.hp / enemy.maxHp) * 100}%`}}/>
+            {/* Levý sloupec (nebo horní na mobilu): Nepřítel a otázka */}
+            <div className="flex flex-col gap-3 w-full md:w-[60%] shrink-0">
+                {/* Nepřítel */}
+                <div className="sketch-box px-4 py-3">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-2xl font-bold" style={{color: enemyColor}}>{enemy.name}</span>
+                        {/* Pokud je potřeba, mírně zvětšeno vizuálně přidáním class/styles (HealthBar to může override) */}
+                        <div className="scale-110 origin-right">
+                            <HealthBar health={enemy.hp} maxHealth={enemy.maxHp}/>
+                        </div>
                     </div>
-                )}
-            </div>
-
-            {/* Placeholder pro ilustraci nepřítele */}
-            <div
-                className="sketch-box-light flex items-center justify-center"
-                style={{flex: 1, minHeight: '5rem', fontSize: '3rem'}}
-            >
-                {enemy.type === EnemyType.BOSS ? '👑' : enemy.type === EnemyType.MINIBOSS ? '💀' : '👾'}
-            </div>
-
-            {/* Příklad */}
-            <div className="sketch-box px-4 py-3 text-center">
-                <div className="time-row">
-                    <span className={`time-text ${isLowTime ? 'time-text-danger' : ''}`}>⏳ {timeLeft}s</span>
-                    <span className="time-hint">na odpověď</span>
+                    {enemy.maxHp > 1 && (
+                        <div className="hp-bar-track mt-1" style={{height: '0.8rem'}}>
+                            <div className="hp-bar-fill" style={{width: `${(enemy.hp / enemy.maxHp) * 100}%`}}/>
+                        </div>
+                    )}
                 </div>
-                <div className="time-track" aria-hidden="true">
-                    <div
-                        className={`time-fill ${isLowTime ? (reducedMotion ? 'time-fill-danger-static' : 'time-fill-danger') : ''}`}
-                        style={{width: `${timePct}%`}}
-                    />
+
+                {/* Placeholder pro ilustraci nepřítele */}
+                <div
+                    className="sketch-box-light flex items-center justify-center grow min-h-[120px] md:min-h-0"
+                    style={{fontSize: '5rem'}}
+                >
+                    {enemy.type === EnemyType.BOSS ? '👑' : enemy.type === EnemyType.MINIBOSS ? '💀' : '👾'}
                 </div>
-                <p className="text-base mt-2" style={{color: 'var(--ink-light)'}}>Vypočítej:</p>
-                <p className="text-3xl font-bold" style={{color: 'var(--ink)', fontFamily: 'Caveat, cursive'}}>
-                    {problem.prompt}
-                </p>
+
+                {/* Příklad */}
+                <div className="sketch-box px-5 py-4 text-center shrink-0">
+                    <div className="time-row mb-1">
+                        <span className={`time-text text-xl ${isLowTime ? 'time-text-danger' : ''}`}>⏳ {timeLeft}s</span>
+                        <span className="time-hint text-sm">na odpověď</span>
+                    </div>
+                    <div className="time-track" aria-hidden="true" style={{height: '10px'}}>
+                        <div
+                            className={`time-fill ${isLowTime ? (reducedMotion ? 'time-fill-danger-static' : 'time-fill-danger') : ''}`}
+                            style={{width: `${timePct}%`}}
+                        />
+                    </div>
+                    <p className="text-lg mt-4 font-medium" style={{color: 'var(--ink-light)'}}>Vypočítej:</p>
+                    <p className="text-4xl md:text-5xl font-bold leading-tight" style={{color: 'var(--ink)', fontFamily: 'Caveat, cursive', padding: '0.5rem 0'}}>
+                        {problem.prompt}
+                    </p>
+                </div>
             </div>
 
-            {/* Odpovědi */}
-            <div className="flex flex-col gap-2">
-                {answers.map(ans => (
-                    <button
-                        key={ans}
-                        className="sketch-btn text-xl py-2 w-full"
-                        onClick={() => handleAnswer(ans)}
-                        disabled={hasAnswered}
-                    >
-                        {ans}
-                    </button>
-                ))}
+            {/* Pravý sloupec (nebo spodní na mobilu): Odpovědi a inventář */}
+            <div className="flex flex-col gap-3 w-full md:w-[40%]">
+
+                {/* Odpovědi - kontejner, který zabere zbývající místo a rozdělí mezery */}
+                <div className="flex flex-col gap-3 grow justify-center">
+                    {answers.map(ans => (
+                        <button
+                            key={ans}
+                            className="sketch-btn text-2xl py-3 w-full shadow-[0.25rem_0.25rem_0_var(--ink)] hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-[0.1rem_0.1rem_0_var(--ink)] transition-all"
+                            onClick={() => handleAnswer(ans)}
+                            disabled={hasAnswered}
+                        >
+                            {ans}
+                        </button>
+                    ))}
+                </div>
+
+                {/* ItemBar */}
+                <div className="sketch-box-light px-3 py-3 mt-auto shrink-0">
+                    <p className="text-sm font-bold text-center mb-2" style={{color: 'var(--ink-light)'}}>Předměty:</p>
+                    <ItemBar inventory={inventory} onUse={handleUseItem}/>
+                </div>
             </div>
 
-            {/* ItemBar */}
-            <div className="sketch-box-light px-2 py-2">
-                <p className="text-xs text-center mb-1" style={{color: 'var(--ink-light)'}}>Předměty:</p>
-                <ItemBar inventory={inventory} onUse={handleUseItem}/>
-            </div>
         </div>
     );
 };

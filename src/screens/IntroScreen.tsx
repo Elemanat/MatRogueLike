@@ -23,46 +23,53 @@ export const IntroScreen: React.FC<Props> = ({tower, onContinue}) => {
     };
 
     return (
-        <div className="flex flex-col h-full px-4 py-6 gap-4 justify-between">
-            <div>
-                <h2 className="text-3xl font-bold text-center mb-1" style={{color: 'var(--ink)'}}>
+        <div className="flex flex-col h-full px-6 py-8 md:px-12 md:py-10 gap-6 w-full items-center justify-between">
+
+            {/* Hlavička - přidáno shrink-0, aby si držela svou velikost */}
+            <div className="text-center w-full shrink-0">
+                <h2 className="text-4xl md:text-5xl font-bold mb-2 text-(--ink)">
                     {tower.name}
                 </h2>
-                <p className="text-center text-sm" style={{color: 'var(--ink-light)'}}>{tower.topic}</p>
+                <p className="text-lg md:text-xl font-medium text-(--ink-light)">
+                    {tower.topic}
+                </p>
             </div>
 
-            {/* Čaroděj */}
-            <div className="flex flex-col items-center gap-6 flex-1 justify-center">
+            {/* Čaroděj a bublina */}
+            <div className="flex flex-col items-center gap-6 md:gap-8 flex-1 justify-center w-full max-w-[700px]">
+
                 {/* Placeholder postava */}
-                <div
-                    className="sketch-box flex items-center justify-center text-6xl w-24 h-24 rounded-full"
-                >
+                <div className="sketch-box flex items-center justify-center text-7xl md:text-8xl w-28 h-28 md:w-36 md:h-36 rounded-full shadow-[0.2rem_0.2rem_0_var(--ink)] md:shadow-[0.3rem_0.3rem_0_var(--ink)] shrink-0">
                     🧙
                 </div>
 
-                {/* Bublina */}
-                <div className="wizard-bubble w-full">
-                    <p className="text-lg" style={{color: 'var(--ink)'}}>
+                {/* ZMĚNA: Bublina dostala min-h-[160px] md:min-h-[220px] a flex s items-center pro vertikální vycentrování textu */}
+                <div className="wizard-bubble w-full px-6 py-5 md:px-8 md:py-8 flex items-center justify-center min-h-[160px] md:min-h-[220px]">
+                    <p className="text-xl md:text-3xl font-medium text-center leading-relaxed text-(--ink)">
                         {WIZARD_LINES[lineIdx]}
                     </p>
                 </div>
 
                 {/* Indikátor řádků */}
-                <div className="flex gap-1.5 mt-6">
+                <div className="flex gap-2.5 md:gap-3 mt-2 md:mt-4 shrink-0">
                     {WIZARD_LINES.map((_, i) => (
                         <span
                             key={i}
-                            className="w-2.5 h-2.5 rounded-full inline-block"
+                            className="w-3 h-3 md:w-4 md:h-4 rounded-full inline-block transition-colors duration-300"
                             style={{
                                 background: i === lineIdx ? 'var(--ink)' : 'var(--grid)',
-                                border: '0.065rem solid var(--ink)',
+                                border: '0.125rem solid var(--ink)',
                             }}
                         />
                     ))}
                 </div>
             </div>
 
-            <button className="sketch-btn sketch-btn-primary text-xl py-2 w-full" onClick={next}>
+            {/* Tlačítko */}
+            <button
+                className="sketch-btn sketch-btn-primary text-2xl md:text-3xl py-3 md:py-4 w-full max-w-[400px] shrink-0 mt-4 transition-transform hover:-translate-y-1"
+                onClick={next}
+            >
                 {lineIdx < WIZARD_LINES.length - 1 ? 'Dál →' : '⚔️ Do věže!'}
             </button>
         </div>
