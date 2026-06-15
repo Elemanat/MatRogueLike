@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matrogulike-postgres
+  namespace: gamefikace-matematika
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: matrogulike-postgres
+  template:
+    metadata:
+      labels:
+        app: matrogulike-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - name: POSTGRES_DB
+              value: "matrogulike"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+          ports:
+            - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: matrogulike-postgres-service
+  namespace: gamefikace-matematika
+spec:
+  selector:
+    app: matrogulike-postgres
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matrogulike-backend
+  namespace: gamefikace-matematika
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: matrogulike-backend
+  template:
+    metadata:
+      labels:
+        app: matrogulike-backend
+    spec:
+      containers:
+        - name: backend
+          image: petrkonir/matrogulike-backend:v1
+          env:
+            # Tady propojujeme backend na vnitřní K8s službu databáze místo localhostu
+            - name: DATABASE_URL
+              value: "postgresql://postgres:postgres@matrogulike-postgres-service:5432/matrogulike"
+            - name: PORT
+              value: "3001"
+            - name: NODE_ENV
+              value: "production"
+          ports:
+            - containerPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: matrogulike-backend-service
+  namespace: gamefikace-matematika
+spec:
+  selector:
+    app: matrogulike-backend
+  ports:
+    - protocol: TCP
+      port: 3001
+      targetPort: 3001

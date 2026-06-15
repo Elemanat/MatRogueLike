@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matrogulike-frontend
+  namespace: gamefikace-matematika
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: matrogulike-frontend
+  template:
+    metadata:
+      labels:
+        app: matrogulike-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: petrkonir/matrogulike-frontend:v1
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: matrogulike-frontend-service
+  namespace: gamefikace-matematika
+spec:
+  selector:
+    app: matrogulike-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
