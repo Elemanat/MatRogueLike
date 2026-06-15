@@ -11,7 +11,12 @@ const THEMES = [
     'angles-degrees',
 ];
 
-const floors = [1, 2, 3]; // map to EASY/MEDIUM/HARD
+const testTiers = [
+    {floor: 1, type: 'NORMAL', name: 'Lehká (Patro 1)'},
+    {floor: 3, type: 'NORMAL', name: 'Střední (Patro 3)'},
+    {floor: 5, type: 'NORMAL', name: 'Těžká (Patro 5)'},
+    {floor: 5, type: 'BOSS', name: 'Finální Boss (Obtížnost 4)'}
+];
 
 const OUT = path.join(process.cwd(), 'scripts', 'generated-samples.md');
 
@@ -19,10 +24,15 @@ let md = '# Vygenerované příklady pro review\n\n';
 
 for (const theme of THEMES) {
     md += `## Téma: ${theme}\n\n`;
-    for (const floor of floors) {
-        md += `### Obtížnost (floor=${floor})\n\n`;
-        const request: ProblemGenerationRequest = {towerId: theme, floor, enemyType: 'NORMAL', nodeId: 'sample-gen'};
-        const problems = generateProblems(request, 20);
+    for (const tier of testTiers) {
+        md += `### ${tier.name}\n\n`;
+        const request: ProblemGenerationRequest = {
+            towerId: theme,
+            floor: tier.floor,
+            enemyType: tier.type,
+            nodeId: 'sample-gen'
+        };
+        const problems = generateProblems(request, 20); // Vygeneruje 20 vzorků od každého
         let idx = 1;
         for (const p of problems) {
             const issues = validateProblem(p);
@@ -32,7 +42,7 @@ for (const theme of THEMES) {
             md += `- correctAnswers: ${JSON.stringify(p.correctAnswers)}\n`;
             md += `- wrongAnswers: ${JSON.stringify(p.wrongAnswers)}\n`;
             if (issues.length > 0) {
-                md += `- ISSUES: ${issues.join('; ')}\n`;
+                md += `- **ISSUES:** ${issues.join('; ')}\n`;
             }
             md += '\n';
             idx += 1;

@@ -8,7 +8,8 @@ const THEMES = [
     'unit-conversions',
     'angles-degrees',
 ];
-const floors = [1, 2, 3];
+const floors = [1, 3, 5];
+const enemyTypes = ['NORMAL', 'MINIBOSS', 'BOSS'];
 const SAMPLE_COUNT = 100;
 
 interface Summary {
@@ -22,16 +23,27 @@ interface Summary {
 
     for (const theme of THEMES) {
         overall[theme] = {total: 0, invalid: 0, issues: {}};
+
         for (const floor of floors) {
-            // Přidán dummy nodeId (generateProblems si ho uvnitř pro iterace stejně přepíše)
-            const req: ProblemGenerationRequest = {towerId: theme, floor, enemyType: 'NORMAL', nodeId: 'validation-gen'};
-            const problems = generateProblems(req, SAMPLE_COUNT);
-            for (const p of problems) {
-                overall[theme].total += 1;
-                const issues = validateProblem(p);
-                if (issues.length > 0) {
-                    overall[theme].invalid += 1;
-                    for (const it of issues) overall[theme].issues[it] = (overall[theme].issues[it] ?? 0) + 1;
+            for (const eType of enemyTypes) {
+                const req: ProblemGenerationRequest = {
+                    towerId: theme,
+                    floor,
+                    enemyType: eType,
+                    nodeId: 'validation-gen'
+                };
+
+                const problems = generateProblems(req, SAMPLE_COUNT);
+
+                for (const p of problems) {
+                    overall[theme].total += 1;
+                    const issues = validateProblem(p);
+                    if (issues.length > 0) {
+                        overall[theme].invalid += 1;
+                        for (const it of issues) {
+                            overall[theme].issues[it] = (overall[theme].issues[it] ?? 0) + 1;
+                        }
+                    }
                 }
             }
         }
