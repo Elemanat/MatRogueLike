@@ -52,8 +52,7 @@ export const TowerSelectScreen: React.FC<Props> = ({onSelect, onBack}) => {
                             </div>
 
                             <div className="mt-auto pt-4 border-t border-(--ink-light) border-dashed w-full text-sm font-bold text-(--ink-light)">
-                                <div>{tower.floors} patra</div>
-                                <div>{tower.roomsPerFloor} místností/patro</div>
+                                <div>{tower.floors} pater každé s {tower.roomsPerFloor} místnosti </div>
                             </div>
                         </button>
                     );

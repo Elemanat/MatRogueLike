@@ -1605,7 +1605,7 @@ Tento dokument simuluje, jak hráči uvidí příklady přímo na obrazovce.
 ---
 
 #### Příklad 3:
-**Převeď: 155 g = ? dag**
+**Převeď: 155 g = ? dkg**
 
 * **A)** 15.5
 * **B)** 1550

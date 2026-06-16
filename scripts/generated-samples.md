@@ -1679,14 +1679,14 @@
 - correctAnswers: ["17000"]
 - wrongAnswers: ["0.017","170000","1700","17"]
 
-#### 14. Převeď: 20 g = ? dag
-- id: u-2-g-dag-4085188935
+#### 14. Převeď: 20 g = ? dkg
+- id: u-2-g-dkg-4085188935
 - topic: unit-conversions, difficulty: 2
 - correctAnswers: ["2"]
 - wrongAnswers: ["200","20","0.2"]
 
-#### 15. Převeď: 27 dag = ? g
-- id: u-2-dag-g-4034856078
+#### 15. Převeď: 27 dkg = ? g
+- id: u-2-dkg-g-4034856078
 - topic: unit-conversions, difficulty: 2
 - correctAnswers: ["270"]
 - wrongAnswers: ["2.7","2700","27"]
@@ -1787,8 +1787,8 @@
 - correctAnswers: ["3.5"]
 - wrongAnswers: ["3500000","35","0.35","3500"]
 
-#### 11. Převeď: 9 dag = ? g
-- id: u-3-dag-g-4101966554
+#### 11. Převeď: 9 dkg = ? g
+- id: u-3-dkg-g-4101966554
 - topic: unit-conversions, difficulty: 3
 - correctAnswers: ["90"]
 - wrongAnswers: ["0.9","900","9"]
@@ -1832,8 +1832,8 @@
 - wrongAnswers: ["700000000","70","0.7","70000"]
 - **ISSUES:** numbers too large for 6th grade math (5+ digits)
 
-#### 18. Převeď: 25 dag = ? g
-- id: u-3-dag-g-4018078459
+#### 18. Převeď: 25 dkg = ? g
+- id: u-3-dkg-g-4018078459
 - topic: unit-conversions, difficulty: 3
 - correctAnswers: ["250"]
 - wrongAnswers: ["2.5","2500","25"]

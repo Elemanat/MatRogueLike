@@ -5,6 +5,7 @@ const WIZARD_LINES = [
     'Vítej, statečný dobrodruhu! Před tebou stojí mocná věž plná matematických záhad.',
     'Nepřátelé ti budou klást příklady. Správnou odpovědí jim zasadíš ránu — špatnou odpovědí přijdeš o srdce.',
     'V truhlách najdeš mocné předměty: lektvary, záměny příkladů, nebo i dalekohled pro nakouknutí do dalších místností.',
+    'Ale pozor! Tyhle předměty ti zůstanou jenom teď vě věži, v dalším průchodu je nemáš',
     'Na konci každého patra číhá silný miniboss — potřebuješ ho porazit třikrát! A na vrcholu věže tě čeká sám Boss…',
     'Hodně štěstí! Věž se sama nedobude. 🧙',
 ];

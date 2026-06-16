@@ -11,7 +11,7 @@ function parseTimeout(raw: string | undefined): number {
 
 export function getApiRuntimeConfig(): ApiRuntimeConfig {
     return {
-        baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001',
+        baseUrl: import.meta.env.VITE_API_BASE_URL ?? '/api',
         timeoutMs: parseTimeout(import.meta.env.VITE_API_TIMEOUT_MS),
     };
 }

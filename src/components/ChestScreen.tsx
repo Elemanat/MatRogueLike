@@ -35,7 +35,7 @@ export const ChestScreen: React.FC<Props> = ({onPick}) => {
                     Tajemná truhla!
                 </h2>
                 <p className="text-lg italic" style={{color: 'var(--ink-light)'}}>
-                    Zaraskalo staré dřevo a uvnitř se něco zalesklo...<br className="hidden md:block" />
+                    Zapraskalo staré dřevo a uvnitř se něco zalesklo...<br className="hidden md:block" />
                     Vyber si jeden předmět na svou další cestu:
                 </p>
             </div>

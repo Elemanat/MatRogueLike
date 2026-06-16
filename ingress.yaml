@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: matrogulike-ingress
+  namespace: gamefikace-matematika
+spec:
+  rules:
+    - host: matrogulike.kvd.zcu.cz
+      http:
+        paths:
+          # API požadavky směřují na backend (port 3001)
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: matrogulike-backend-service
+                port:
+                  number: 3001
+          # Všechno ostatní směřuje na frontend (port 80)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: matrogulike-frontend-service
+                port:
+                  number: 80

@@ -130,21 +130,21 @@ Systém převodů je rozšířený a pokrývá více kategorií - délku, hmotno
 
 | Kategorie | Konverze | Faktor |
 |-----------|----------|--------|
-| **Délka** | cm ↔ m | 0,01 / 100 |
-| | m ↔ km | 0,001 / 1000 |
-| | mm ↔ cm | 0,1 / 10 |
-| | mm ↔ m | 0,001 / 1000 |
-| **Hmotnost** | g ↔ kg | 0,001 / 1000 |
-| | dag ↔ g | 0,1 / 10 |
-| | kg ↔ t | 0,001 / 1000 |
-| **Objem** | ml ↔ l | 0,001 / 1000 |
-| | dl ↔ l | 0,1 / 10 |
-| **Čas** | min ↔ s | 60 (obě cesty) |
-| | h ↔ min | 60 (obě cesty) |
-| | h ↔ s | 3600 (obě cesty) |
+| **Délka** | cm ↔ m   | 0,01 / 100 |
+| | m ↔ km   | 0,001 / 1000 |
+| | mm ↔ cm  | 0,1 / 10 |
+| | mm ↔ m   | 0,001 / 1000 |
+| **Hmotnost** | g ↔ kg   | 0,001 / 1000 |
+| | dkg ↔ g  | 0,1 / 10 |
+| | kg ↔ t   | 0,001 / 1000 |
+| **Objem** | ml ↔ l   | 0,001 / 1000 |
+| | dl ↔ l   | 0,1 / 10 |
+| **Čas** | min ↔ s  | 60 (obě cesty) |
+| | h ↔ min  | 60 (obě cesty) |
+| | h ↔ s    | 3600 (obě cesty) |
 | **Plocha** | cm² ↔ m² | 0,0001 / 10000 |
-| | m² ↔ a | 0,01 / 100 |
-| | a ↔ ha | 0,01 / 100 |
+| | m² ↔ a   | 0,01 / 100 |
+| | a ↔ ha   | 0,01 / 100 |
 | | ha ↔ km² | 0,01 / 100 |
 
 ### Běžné úrovně (Patra 1-3)
