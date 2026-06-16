@@ -82,6 +82,9 @@ export const CombatScreen: React.FC<Props> = ({
     const [timeLeft, setTimeLeft] = useState(roundTimeSeconds);
     const [timeCap, setTimeCap] = useState(roundTimeSeconds);
 
+    // Nový stav pro efekt "míchání" místnosti
+    const [isShuffling, setIsShuffling] = useState(false);
+
     useEffect(() => {
         if (peekNextRoom) return;
         if (hasAnswered) return;
@@ -102,14 +105,11 @@ export const CombatScreen: React.FC<Props> = ({
         return () => window.clearTimeout(timer);
     }, [hasAnswered, timeLeft, onAnswer, peekNextRoom, showWrongAnswerDialog]);
 
-    // Náhodné zamíchání odpovědí
     const answers = useMemo(() => {
-        // Vezmeme první správnou odpověď z pole a připojíme špatné odpovědi
         const all = [problem.correctAnswers[0], ...problem.wrongAnswers];
         return shuffleArray(all);
     }, [problem]);
 
-    // ADD_TIME: sleduj použití itemu a zobraz toast
     const handleUseItem = useCallback((id: Item['id']) => {
         if (id === ItemId.ADD_TIME) {
             onUseItem(id);
@@ -119,8 +119,6 @@ export const CombatScreen: React.FC<Props> = ({
             setShowTimeToast(true);
             setTimeout(() => setShowTimeToast(false), 2000);
         } else if (id === ItemId.CHANGE_PROB) {
-            // Když použijeme záměnu, musíme nejen říct ven, ať to sežene nový,
-            // ale musíme i zresetovat náš bojový formulář a časovač.
             onUseItem(id);
             setHasAnswered(false);
             setTimeLeft(roundTimeSeconds);
@@ -129,6 +127,17 @@ export const CombatScreen: React.FC<Props> = ({
             onUseItem(id);
         }
     }, [onUseItem, onAddTimeUsed, roundTimeSeconds]);
+
+    // Obalení funkce onPeekSkip pro přidání vizuálního delaye
+    const handlePeekSkip = useCallback(() => {
+        setIsShuffling(true);
+        onPeekSkip(); // Řekneme backendu/stavu o změnu
+
+        // Animace poběží 600ms, pak ukážeme výsledek
+        setTimeout(() => {
+            setIsShuffling(false);
+        }, 600);
+    }, [onPeekSkip]);
 
     const enemyColor = enemy.type === EnemyType.BOSS
         ? 'var(--gold)'
@@ -142,14 +151,12 @@ export const CombatScreen: React.FC<Props> = ({
         if (hasAnswered) return;
         setHasAnswered(true);
 
-        // Check against all correct answers z pole
         const isCorrect = problem.correctAnswers.some(correct => isEquivalentAnswer(selectedAnswer, correct));
 
         onAnswer(selectedAnswer, isCorrect);
     }, [hasAnswered, onAnswer, problem.correctAnswers]);
 
     return (
-        // Hlavní kontejner – přepíná mezi jedním (mobil) a dvěma (desktop) sloupci
         <div className="flex flex-col md:flex-row h-full px-3 py-3 gap-5 relative w-full items-stretch overflow-y-auto">
 
             {/* ADD_TIME toast */}
@@ -171,18 +178,53 @@ export const CombatScreen: React.FC<Props> = ({
             {/* PEEK modal */}
             {peekNextRoom && (
                 <div style={{
-                    position: 'absolute', inset: 0, background: 'rgba(44,44,62,0.55)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30,
+                    // ZMĚNA: Použito position: fixed místo absolute, aby dialog překryl úplně vše i při scrollování
+                    position: 'fixed', inset: 0, background: 'rgba(44,44,62,0.85)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
                 }}>
-                    <div className="sketch-box px-6 py-6 flex flex-col items-center gap-4 mx-4">
-                        <p className="text-2xl font-bold text-center" style={{color: 'var(--ink)'}}>🔭 Příští
-                            místnost:</p>
-                        <p className="text-3xl font-bold text-center">{ROOM_TYPE_LABEL[peekNextRoom]}</p>
-                        <div className="flex gap-3 w-full flex-col">
-                            <button className="sketch-btn text-lg" onClick={onClosePeek}>✓ V pořádku</button>
+                    {/* ZMĚNA: Přidáno responzivní škálování pro velký monitor */}
+                    <div
+                        className="sketch-box px-8 py-8 md:px-10 md:py-10 flex flex-col items-center gap-6 mx-4 w-[90%] max-w-[400px] md:max-w-[500px]">
+                        <p className="text-3xl md:text-4xl font-bold text-center text-(--ink)">
+                            🔭 Příští místnost
+                        </p>
+
+                        {/* ZMĚNA: Dynamický obsah založený na stavu "míchání" */}
+                        {isShuffling ? (
+                            <div className="flex flex-col items-center justify-center min-h-[140px] animate-pulse">
+                                <p className="text-6xl mb-3">🌪️</p>
+                                <p className="text-xl md:text-2xl text-(--ink-light) italic font-medium">Hledám jinou
+                                    cestu...</p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center min-h-[140px]">
+                                <p className="text-4xl md:text-5xl font-bold text-center">
+                                    {ROOM_TYPE_LABEL[peekNextRoom]}
+                                </p>
+                                {/* ZMĚNA: Zpráva o úspěšném přerulování pro jasnější feedback */}
+                                {hasRerolledPeek && (
+                                    <p className="text-xl md:text-2xl font-bold mt-4" style={{color: 'var(--green)'}}>
+                                        ✨ Úspěšně změněno!
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="flex gap-4 w-full flex-col mt-2">
+                            <button
+                                className="sketch-btn text-xl md:text-2xl py-3"
+                                onClick={onClosePeek}
+                                disabled={isShuffling} // Zakázáno klikat během míchání
+                            >
+                                ✓ V pořádku
+                            </button>
 
                             {!hasRerolledPeek && peekNextRoom !== RoomType.MINIBOSS && peekNextRoom !== RoomType.BOSS && (
-                                <button className="sketch-btn sketch-btn-warning text-lg" onClick={onPeekSkip}>
+                                <button
+                                    className="sketch-btn sketch-btn-warning text-xl md:text-2xl py-3"
+                                    onClick={handlePeekSkip}
+                                    disabled={isShuffling} // Zakázáno klikat během míchání
+                                >
                                     🔄 Změnit místnost
                                 </button>
                             )}
@@ -191,13 +233,11 @@ export const CombatScreen: React.FC<Props> = ({
                 </div>
             )}
 
-            {/* Levý sloupec (nebo horní na mobilu): Nepřítel a otázka */}
+            {/* Levý sloupec: Nepřítel a otázka */}
             <div className="flex flex-col gap-3 w-full md:w-[60%] shrink-0">
-                {/* Nepřítel */}
                 <div className="sketch-box px-4 py-3">
                     <div className="flex justify-between items-center mb-2">
                         <span className="text-2xl font-bold" style={{color: enemyColor}}>{enemy.name}</span>
-                        {/* Pokud je potřeba, mírně zvětšeno vizuálně přidáním class/styles (HealthBar to může override) */}
                         <div className="scale-110 origin-right">
                             <HealthBar health={enemy.hp} maxHealth={enemy.maxHp}/>
                         </div>
@@ -209,7 +249,6 @@ export const CombatScreen: React.FC<Props> = ({
                     )}
                 </div>
 
-                {/* Placeholder pro ilustraci nepřítele */}
                 <div
                     className="sketch-box-light flex items-center justify-center grow min-h-[120px] md:min-h-0"
                     style={{fontSize: '5rem'}}
@@ -217,10 +256,10 @@ export const CombatScreen: React.FC<Props> = ({
                     {enemy.type === EnemyType.BOSS ? '👑' : enemy.type === EnemyType.MINIBOSS ? '💀' : '👾'}
                 </div>
 
-                {/* Příklad */}
                 <div className="sketch-box px-5 py-4 text-center shrink-0">
                     <div className="time-row mb-1">
-                        <span className={`time-text text-xl ${isLowTime ? 'time-text-danger' : ''}`}>⏳ {timeLeft}s</span>
+                        <span
+                            className={`time-text text-xl ${isLowTime ? 'time-text-danger' : ''}`}>⏳ {timeLeft}s</span>
                         <span className="time-hint text-sm">na odpověď</span>
                     </div>
                     <div className="time-track" aria-hidden="true" style={{height: '10px'}}>
@@ -230,16 +269,15 @@ export const CombatScreen: React.FC<Props> = ({
                         />
                     </div>
                     <p className="text-lg mt-4 font-medium" style={{color: 'var(--ink-light)'}}>Vypočítej:</p>
-                    <p className="text-4xl md:text-5xl font-bold leading-tight" style={{color: 'var(--ink)', fontFamily: 'Caveat, cursive', padding: '0.5rem 0'}}>
+                    <p className="text-4xl md:text-5xl font-bold leading-tight"
+                       style={{color: 'var(--ink)', fontFamily: 'Caveat, cursive', padding: '0.5rem 0'}}>
                         {problem.prompt}
                     </p>
                 </div>
             </div>
 
-            {/* Pravý sloupec (nebo spodní na mobilu): Odpovědi a inventář */}
+            {/* Pravý sloupec: Odpovědi a inventář */}
             <div className="flex flex-col gap-3 w-full md:w-[40%]">
-
-                {/* Odpovědi - kontejner, který zabere zbývající místo a rozdělí mezery */}
                 <div className="flex flex-col gap-3 grow justify-center">
                     {answers.map(ans => (
                         <button
@@ -253,7 +291,6 @@ export const CombatScreen: React.FC<Props> = ({
                     ))}
                 </div>
 
-                {/* ItemBar */}
                 <div className="sketch-box-light px-3 py-3 mt-auto shrink-0">
                     <p className="text-sm font-bold text-center mb-2" style={{color: 'var(--ink-light)'}}>Předměty:</p>
                     <ItemBar inventory={inventory} onUse={handleUseItem}/>
