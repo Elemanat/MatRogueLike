@@ -37,10 +37,15 @@ export const VictoryScreen: React.FC<Props> = ({playerName, towerName, stats, on
         </div>
 
         <button
-            className="sketch-btn sketch-btn-primary w-full text-2xl py-2"
+            className="sketch-btn sketch-btn-danger text-xl py-2 flex-1 flex items-center justify-center gap-3"
             onClick={onMenu}
         >
-            ← Zpět do menu
+            <img
+                src="/assets/icons/door_icon.png"
+                alt="Logout"
+                className="h-8 w-8 object-contain"
+            />
+            Zpět
         </button>
     </div>
 );

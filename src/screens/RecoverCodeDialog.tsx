@@ -1,11 +1,11 @@
 import React, {useState} from 'react';
 
 const ANIMALS = [
-    {emoji: '🐶', label: 'Pes'},
-    {emoji: '🐱', label: 'Kočka'},
-    {emoji: '🐸', label: 'Žába'},
-    {emoji: '🦊', label: 'Liska'},
-    {emoji: '🐼', label: 'Panda'},
+    {emoji: '🐶', label: 'Pes', icon: '/assets/icons/dog_icon_no_bg.png'},
+    {emoji: '🐱', label: 'Kočka', icon: '/assets/icons/cat_icon_no_bg.png'},
+    {emoji: '🐸', label: 'Žába', icon: '/assets/icons/frog_icon_no_bg.png'},
+    {emoji: '🦊', label: 'Liška', icon: '/assets/icons/fox_icon_no_bg.png'},
+    {emoji: '🐼', label: 'Panda', icon: '/assets/icons/panda_icon_no_bg.png'},
 ] as const;
 
 interface Props {
@@ -87,24 +87,33 @@ export const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
                                 <label className="text-sm block mb-2" style={{color: 'var(--ink-light)'}}>
                                     Tvoje tajné zvířátko:
                                 </label>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 flex-wrap justify-center">
                                     {ANIMALS.map(animal => (
                                         <button
                                             key={animal.emoji}
-                                            className="text-2xl px-3 py-2 rounded-lg transition-all flex-1"
+                                            className="sketch-box w-20 h-20 p-1 rounded-lg transition-all flex items-center justify-center"
                                             style={{
-                                                background: selectedAnimal === animal.emoji ? 'var(--primary)' : 'var(--paper)',
+                                                background: selectedAnimal === animal.emoji ? 'var(--paper-dark)' : 'var(--paper)',
                                                 border: selectedAnimal === animal.emoji
                                                     ? '3px solid var(--ink)'
                                                     : '2px solid var(--ink-light)',
                                                 opacity: isLoading ? 0.5 : 1,
                                                 cursor: isLoading ? 'not-allowed' : 'pointer',
+                                                boxShadow: selectedAnimal === animal.emoji
+                                                    ? '0 0 10px rgba(44,44,62,0.3)'
+                                                    : '0.2rem 0.2rem 0 var(--ink)',
                                             }}
                                             onClick={() => setSelectedAnimal(animal.emoji)}
                                             disabled={isLoading}
                                             title={animal.label}
                                         >
-                                            {animal.emoji}
+                                            <img
+                                                src={animal.icon}
+                                                alt={animal.label}
+                                                className={`w-full h-full scale-150 ${
+                                                    animal.emoji === '🐼' ? 'icon-no-bg object-contain' : 'object-cover'
+                                                }`}
+                                            />
                                         </button>
                                     ))}
                                 </div>

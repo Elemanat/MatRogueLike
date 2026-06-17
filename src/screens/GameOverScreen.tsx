@@ -34,8 +34,16 @@ export const GameOverScreen: React.FC<Props> = ({playerName, floor, stats, onRet
             <button className="sketch-btn sketch-btn-primary w-full text-2xl py-2" onClick={onReturnToIntro}>
                 🔄 Zkusit znovu
             </button>
-            <button className="sketch-btn w-full text-xl py-2" onClick={onMenu}>
-                ← Zpět do menu
+            <button
+                className="sketch-btn sketch-btn-danger text-xl py-2 flex-1 flex items-center justify-center gap-3"
+                onClick={onMenu}
+            >
+                <img
+                    src="/assets/icons/door_icon.png"
+                    alt="Logout"
+                    className="h-8 w-8 object-contain"
+                />
+                Zpět do menu
             </button>
         </div>
     </div>

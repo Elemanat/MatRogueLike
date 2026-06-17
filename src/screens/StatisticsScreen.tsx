@@ -62,9 +62,19 @@ export const StatisticsScreen: React.FC<Props> = ({playerName, onBack}) => {
     if (error || !stats) {
         return (
             <div className="flex flex-col h-full px-4 py-6 gap-4">
-                <h2 className="text-3xl font-bold text-center text-[var(--ink)]">Statistiky</h2>
-                <p className="text-center text-[var(--red)]">{error}</p>
-                <button className="sketch-btn mt-auto py-2 w-full" onClick={onBack}>← Zpátky</button>
+                <h2 className="text-3xl font-bold text-center text-(--ink)">Statistiky</h2>
+                <p className="text-center text-(--red)">{error}</p>
+                <button
+                    className="sketch-btn sketch-btn-danger text-xl py-2 flex-1 flex items-center justify-center gap-3"
+                    onClick={onBack}
+                >
+                    <img
+                        src="/assets/icons/door_icon.png"
+                        alt="Logout"
+                        className="h-8 w-8 object-contain"
+                    />
+                    Zpět
+                </button>
             </div>
         );
     }
@@ -121,12 +131,22 @@ export const StatisticsScreen: React.FC<Props> = ({playerName, onBack}) => {
             {totalBadges > 0 && (
                 <div className="sketch-box-light px-4 py-3 mt-4 flex items-center justify-center gap-2 bg-yellow-50">
                     <span className="text-2xl">📊</span>
-                    <span className="text-lg font-bold text-[var(--ink)]">Celkem odznaků:</span>
-                    <span className="text-2xl font-bold text-[var(--ink)]">{totalBadges}</span>
+                    <span className="text-lg font-bold text-(--ink)">Celkem odznaků:</span>
+                    <span className="text-2xl font-bold text-(--ink)">{totalBadges}</span>
                 </div>
             )}
 
-            <button className="sketch-btn text-xl py-2 mt-6 w-full" onClick={onBack}>← Zpět do menu</button>
+            <button
+                className="sketch-btn sketch-btn-danger text-xl py-2 w-full flex items-center justify-center gap-3 mt-auto"
+                onClick={onBack}
+            >
+                <img
+                    src="/assets/icons/door_icon.png"
+                    alt="Logout"
+                    className="h-8 w-8 object-contain"
+                />
+                Zpět do menu
+            </button>
         </div>
     );
 };

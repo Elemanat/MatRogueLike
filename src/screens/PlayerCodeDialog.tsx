@@ -20,8 +20,14 @@ export const PlayerCodeDialog: React.FC<Props> = ({playerName, playerCode, onClo
                     borderColor: 'var(--ink)'
                 }}
             >
-                <h2 className="text-4xl font-bold text-center" style={{color: 'var(--ink)'}}>
-                    🎉 Vítej!
+                <h2 className="text-4xl font-bold text-center flex items-center justify-center gap-3"
+                    style={{color: 'var(--ink)'}}>
+                    <img
+                        src="/assets/icons/confetti_icon.png"
+                        alt="Radost"
+                        className="h-10 w-10 object-contain"
+                    />
+                    Vítej!
                 </h2>
 
                 <p className="text-lg text-center" style={{color: 'var(--ink)'}}>
@@ -36,32 +42,43 @@ export const PlayerCodeDialog: React.FC<Props> = ({playerName, playerCode, onClo
                         className="p-4 border-2 rounded text-center bg-white"
                         style={{borderColor: 'var(--ink)'}}
                     >
-                        <p className="text-2xl font-mono font-bold" style={{color: 'var(--ink)', letterSpacing: '0.1em'}}>
+                        <p className="text-2xl font-mono font-bold"
+                           style={{color: 'var(--ink)', letterSpacing: '0.1em'}}>
                             {playerCode}
                         </p>
                     </div>
                 </div>
 
                 <p className="text-sm text-center" style={{color: 'var(--ink-light)'}}>
-                    Zkopíruj si svůj kód. Buď ho potřebovat příště pro přihlášení!
+                    Zkopíruj si svůj kód. Budeš ho potřebovat příště pro přihlášení!
                 </p>
 
                 <div className="flex gap-3 flex-col">
                     <button
-                        className="sketch-btn sketch-btn-primary text-lg py-2 w-full"
+                        className="sketch-btn text-lg py-2 w-full flex items-center justify-center gap-3"
                         onClick={copyToClipboard}
                     >
-                        📋 Kopírovat
+                        <img
+                            src="/assets/icons/clipboard_icon.png"
+                            alt="Clipboard icon"
+                            className="h-7 w-7 object-contain"
+                        />
+                        Kopírovat
                     </button>
+
                     <button
-                        className="sketch-btn text-lg py-2 w-full"
+                        className="sketch-btn text-lg py-2 w-full flex items-center justify-center gap-3"
                         onClick={onClose}
                     >
-                        Pokračovat →
+                        Pokračovat
+                        <img
+                            src="/assets/icons/gate_icon.png"
+                            alt="Pokračovat"
+                            className="h-8 w-8 object-contain"
+                        />
                     </button>
                 </div>
             </div>
         </div>
     );
 };
-

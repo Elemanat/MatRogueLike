@@ -19,15 +19,14 @@ export const TowerSelectScreen: React.FC<Props> = ({onSelect, onBack}) => {
                 </p>
             </div>
 
-            {/* ZMĚNA: flex-col pro mobil, md:flex-row pro PC. Přidán vertikální scroll pro mobil */}
-            <div className="flex flex-col md:flex-row gap-5 flex-1 min-h-0 overflow-y-auto md:overflow-y-hidden md:overflow-x-auto pb-4 px-1 items-stretch w-full">
+            <div
+                className="flex flex-col md:flex-row gap-5 flex-1 min-h-0 overflow-y-auto md:overflow-y-hidden md:overflow-x-auto pb-4 px-1 items-stretch w-full">
                 {TOWERS.map(tower => {
                     const isSelected = selected?.id === tower.id;
 
                     return (
                         <button
                             key={tower.id}
-                            /* ZMĚNA: Přidáno flex-none, w-full a min-h pro mobil. Přidány md: prefixy pro PC (roztažení do stran) */
                             className={`sketch-box relative flex flex-col justify-between items-center px-4 py-6 cursor-pointer transition-all border-2 flex-none w-full min-h-[200px] md:min-h-0 md:h-full md:flex-1 md:w-auto md:min-w-[220px] bg-cover bg-bottom text-center ${
                                 isSelected
                                     ? 'border-(--gold) shadow-[0.3rem_0.3rem_0_var(--gold)] ring-4 ring-(--gold) ring-opacity-50'
@@ -51,8 +50,9 @@ export const TowerSelectScreen: React.FC<Props> = ({onSelect, onBack}) => {
                                 </div>
                             </div>
 
-                            <div className="mt-auto pt-4 border-t border-(--ink-light) border-dashed w-full text-sm font-bold text-(--ink-light)">
-                                <div>{tower.floors} pater každé s {tower.roomsPerFloor} místnosti </div>
+                            <div
+                                className="mt-auto pt-4 border-t border-(--ink-light) border-dashed w-full text-sm font-bold text-(--ink-light)">
+                                <div>{tower.floors} pater každé s {tower.roomsPerFloor} místnosti</div>
                             </div>
                         </button>
                     );
@@ -60,13 +60,29 @@ export const TowerSelectScreen: React.FC<Props> = ({onSelect, onBack}) => {
             </div>
 
             <div className="flex gap-3 pt-2 shrink-0 w-full">
-                <button className="sketch-btn flex-1 text-lg" onClick={onBack}>← Zpět</button>
                 <button
-                    className="sketch-btn sketch-btn-primary flex-2 text-lg px-6 disabled:opacity-40 transition-opacity"
+                    className="sketch-btn sketch-btn-danger text-xl py-2 flex-1 flex items-center justify-center gap-3"
+                    onClick={onBack}
+                >
+                    <img
+                        src="/assets/icons/door_icon.png"
+                        alt="Logout"
+                        className="h-8 w-8 object-contain"
+                    />
+                    Zpět
+                </button>
+
+                <button
+                    className="sketch-btn sketch-btn-primary text-xl py-2 flex-1 flex items-center justify-center gap-3 px-6 disabled:opacity-40 transition-opacity"
                     disabled={!selected}
                     onClick={() => selected && onSelect(selected)}
                 >
-                    Pokračovat →
+                    Pokračovat
+                    <img
+                        src="/assets/icons/gate_icon.png"
+                        alt="Pokračovat"
+                        className="h-8 w-8 object-contain"
+                    />
                 </button>
             </div>
         </div>

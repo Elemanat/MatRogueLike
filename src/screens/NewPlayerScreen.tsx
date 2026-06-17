@@ -1,10 +1,10 @@
 import React, {useState} from 'react';
 
 const ANIMALS = [
-    {emoji: '🐶', label: 'Pes', icon: '/assets/icons/dog_icon.png'},
-    {emoji: '🐱', label: 'Kočka', icon: '/assets/icons/cat_icon.png'},
-    {emoji: '🐸', label: 'Žába', icon: '/assets/icons/frog_icon.png'},
-    {emoji: '🦊', label: 'Liška', icon: '/assets/icons/fox_icon.png'},
+    {emoji: '🐶', label: 'Pes', icon: '/assets/icons/dog_icon_no_bg.png'},
+    {emoji: '🐱', label: 'Kočka', icon: '/assets/icons/cat_icon_no_bg.png'},
+    {emoji: '🐸', label: 'Žába', icon: '/assets/icons/frog_icon_no_bg.png'},
+    {emoji: '🦊', label: 'Liška', icon: '/assets/icons/fox_icon_no_bg.png'},
     {emoji: '🐼', label: 'Panda', icon: '/assets/icons/panda_icon_no_bg.png'},
 ] as const;
 
@@ -27,7 +27,11 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, e
 
     return (
         <div className="flex flex-col items-center justify-center h-full gap-8 px-6">
-            <h1 className="text-5xl font-bold rpg-title" style={{color: 'var(--ink)'}}>VěžMat</h1>
+            <img
+                src="/assets/title.png"
+                alt="VěžMat"
+                className="w-3/4 md:w-1/2 h-auto object-contain drop-shadow-lg"
+            />
             <p className="text-xl text-center" style={{color: 'var(--ink-light)'}}>
                 Jak se jmenuješ?
             </p>
@@ -59,7 +63,7 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, e
                     {ANIMALS.map(animal => (
                         <button
                             key={animal.emoji}
-                            className="sketch-box w-28 h-28 p-2 rounded-lg transition-all flex items-center justify-center"
+                            className="sketch-box w-28 h-28 p-1 rounded-lg transition-all flex items-center justify-center overflow-hidden"
                             style={{
                                 background: selectedAnimal === animal.emoji ? 'var(--paper-dark)' : 'var(--paper)',
                                 border: selectedAnimal === animal.emoji
@@ -78,7 +82,9 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, e
                             <img
                                 src={animal.icon}
                                 alt={animal.label}
-                                className={animal.emoji === '🐼' ? 'icon-no-bg w-30 h-30 object-contain' : 'w-20 h-20 object-contain'}
+                                className={`w-full h-full scale-150 ${
+                                    animal.emoji === '🐼' ? 'icon-no-bg object-contain' : 'object-cover'
+                                }`}
                             />
                         </button>
                     ))}
@@ -87,18 +93,28 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, e
 
             <div className="flex gap-3 w-full">
                 <button
-                    className="sketch-btn text-lg py-2 flex-1"
+                    className="sketch-btn sketch-btn-danger text-xl py-2 flex-1 flex items-center justify-center gap-3"
                     onClick={onBack}
                     disabled={isLoading}
                 >
-                    ← Zpět
+                    <img
+                        src="/assets/icons/door_icon.png"
+                        alt="Logout"
+                        className="h-8 w-8 object-contain"
+                    />
+                    Zpět
                 </button>
                 <button
-                    className="sketch-btn sketch-btn-primary text-lg py-2 flex-1 disabled:opacity-40 transition-opacity"
+                    className="sketch-btn sketch-btn-primary text-xl py-2 flex-1 flex items-center justify-center gap-3 disabled:opacity-40 transition-opacity"
                     disabled={!name.trim() || isLoading}
                     onClick={handleSubmit}
                 >
-                    Pokračovat →
+                    <img
+                        src="/assets/icons/gate_icon.png"
+                        alt="Vstup"
+                        className="h-8 w-8 object-contain"
+                    />
+                    Pokračovat
                 </button>
             </div>
         </div>
