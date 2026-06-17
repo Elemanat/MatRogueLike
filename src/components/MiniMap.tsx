@@ -14,6 +14,8 @@ export const MiniMap: React.FC<Props> = ({ tower, floor, room }) => {
         {Array.from({ length: tower.floors }, (_, fi) => {
           const floorNum = tower.floors - fi; // kreslit od vrchu
           const isCurrentFloor = floorNum === floor;
+          const isBossFloor = floorNum === tower.floors;
+          
           return (
               <div key={floorNum} className="flex items-center gap-0.5">
                 {/* Číslo patra */}
@@ -21,8 +23,8 @@ export const MiniMap: React.FC<Props> = ({ tower, floor, room }) => {
                     className={`w-2.5 text-right text-[0.65rem] ${isCurrentFloor ? 'font-bold' : 'font-normal'}`}
                     style={{ color: isCurrentFloor ? 'var(--ink)' : 'var(--grid)' }}
                 >
-              {floorNum}
-            </span>
+                  {floorNum}
+                </span>
 
                 {/* Místnosti */}
                 {Array.from({ length: tower.roomsPerFloor }, (__, ri) => {
@@ -37,7 +39,7 @@ export const MiniMap: React.FC<Props> = ({ tower, floor, room }) => {
                       <div
                           key={roomNum}
                           title={`Patro ${floorNum}, místnost ${roomNum}`}
-                          className="w-3 h-3 rounded-sm box-border"
+                          className={`w-3 h-3 rounded-sm box-border transition-all ${isCurrent ? 'glow-pulse' : ''}`}
                           style={{
                             border: isCurrent ? '0.125rem solid var(--ink)' : '0.065rem solid var(--grid)',
                             background: isCurrent
@@ -47,15 +49,19 @@ export const MiniMap: React.FC<Props> = ({ tower, floor, room }) => {
                                     : isFuture
                                         ? 'transparent'
                                         : 'var(--paper)',
+                            boxShadow: isCurrent ? '0 0 10px rgba(192, 57, 43, 0.8)' : 'none',
                           }}
                       />
                   );
                 })}
 
-                {/* Boss/Miniboss ikona na konci patra */}
-                <span className="text-[0.6rem] ml-[0.065rem]">
-              {floorNum === tower.floors ? '👑' : '💀'}
-            </span>
+                {/* Boss/Miniboss ikona na konci patra - emoji, lze později nahradit obrázky */}
+                <span 
+                  className="text-[0.6rem] ml-[0.065rem]"
+                  title={isBossFloor ? 'Boss' : 'Miniboss'}
+                >
+                  {isBossFloor ? '👑' : '💀'}
+                </span>
               </div>
           );
         })}

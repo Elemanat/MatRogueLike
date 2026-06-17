@@ -1,11 +1,11 @@
 import React, {useState} from 'react';
 
 const ANIMALS = [
-    {emoji: '🐶', label: 'Pes'},
-    {emoji: '🐱', label: 'Kočka'},
-    {emoji: '🐸', label: 'Žába'},
-    {emoji: '🦊', label: 'Liška'},
-    {emoji: '🐼', label: 'Panda'},
+    {emoji: '🐶', label: 'Pes', icon: '/assets/icons/dog_icon.png'},
+    {emoji: '🐱', label: 'Kočka', icon: '/assets/icons/cat_icon.png'},
+    {emoji: '🐸', label: 'Žába', icon: '/assets/icons/frog_icon.png'},
+    {emoji: '🦊', label: 'Liška', icon: '/assets/icons/fox_icon.png'},
+    {emoji: '🐼', label: 'Panda', icon: '/assets/icons/panda_icon_no_bg.png'},
 ] as const;
 
 interface Props {
@@ -27,7 +27,7 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, e
 
     return (
         <div className="flex flex-col items-center justify-center h-full gap-8 px-6">
-            <h1 className="text-5xl font-bold" style={{color: 'var(--ink)'}}>VěžMat</h1>
+            <h1 className="text-5xl font-bold rpg-title" style={{color: 'var(--ink)'}}>VěžMat</h1>
             <p className="text-xl text-center" style={{color: 'var(--ink-light)'}}>
                 Jak se jmenuješ?
             </p>
@@ -45,7 +45,7 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, e
                 />
 
                 {error && (
-                    <p className="text-base font-semibold" style={{color: 'var(--danger)'}}>
+                    <p className="text-base font-semibold" style={{color: 'var(--red)'}}>
                         ❌ {error}
                     </p>
                 )}
@@ -55,24 +55,31 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, e
                 <p className="text-sm text-center" style={{color: 'var(--ink-light)'}}>
                     Vyber si své tajné zvířátko:
                 </p>
-                <div className="flex gap-3 justify-center">
+                <div className="flex gap-3 justify-center flex-wrap">
                     {ANIMALS.map(animal => (
                         <button
                             key={animal.emoji}
-                            className="text-3xl px-4 py-3 rounded-lg transition-all"
+                            className="sketch-box w-28 h-28 p-2 rounded-lg transition-all flex items-center justify-center"
                             style={{
-                                background: selectedAnimal === animal.emoji ? 'var(--primary)' : 'var(--paper)',
+                                background: selectedAnimal === animal.emoji ? 'var(--paper-dark)' : 'var(--paper)',
                                 border: selectedAnimal === animal.emoji
                                     ? '3px solid var(--ink)'
                                     : '2px solid var(--ink-light)',
                                 opacity: isLoading ? 0.5 : 1,
                                 cursor: isLoading ? 'not-allowed' : 'pointer',
+                                boxShadow: selectedAnimal === animal.emoji
+                                    ? '0 0 10px rgba(44,44,62,0.3)'
+                                    : '0.2rem 0.2rem 0 var(--ink)',
                             }}
                             onClick={() => setSelectedAnimal(animal.emoji)}
                             disabled={isLoading}
                             title={animal.label}
                         >
-                            {animal.emoji}
+                            <img
+                                src={animal.icon}
+                                alt={animal.label}
+                                className={animal.emoji === '🐼' ? 'icon-no-bg w-30 h-30 object-contain' : 'w-20 h-20 object-contain'}
+                            />
                         </button>
                     ))}
                 </div>

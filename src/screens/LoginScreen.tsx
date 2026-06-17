@@ -8,7 +8,7 @@ interface Props {
 export const LoginScreen: React.FC<Props> = ({onNewPlayer, onExistingPlayer}) => {
     return (
         <div className="flex flex-col items-center justify-center h-full gap-8 px-6">
-            <h1 className="text-6xl font-bold" style={{color: 'var(--ink)'}}>VěžMat</h1>
+            <h1 className="text-6xl font-bold rpg-title" style={{color: 'var(--ink)'}}>VěžMat</h1>
             <p className="text-xl text-center" style={{color: 'var(--ink-light)'}}>
                 Matematická věž čeká na svého hrdinu…
             </p>

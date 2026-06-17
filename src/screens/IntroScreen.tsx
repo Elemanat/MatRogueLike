@@ -30,7 +30,7 @@ export const IntroScreen: React.FC<Props> = ({tower, onContinue}) => {
 
             <div className="text-center w-full shrink-0">
                 {/* ZMĚNA: Zmenšený nadpis a mezery pod ním */}
-                <h2 className="text-3xl md:text-4xl font-bold mb-1 text-(--ink)">
+                <h2 className="text-3xl md:text-4xl font-bold mb-1 rpg-title">
                     {tower.name}
                 </h2>
                 <p className="text-base md:text-lg font-medium text-(--ink-light)">

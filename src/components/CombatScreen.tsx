@@ -146,6 +146,17 @@ export const CombatScreen: React.FC<Props> = ({
             : 'var(--ink)';
     const isLowTime = timeLeft <= 5;
     const timePct = Math.max(0, Math.min(100, (timeLeft / timeCap) * 100));
+    
+    // Dynamická barva timeru podle zbývajícího času
+    const getTimeFillColor = () => {
+        if (timePct > 60) return 'time-fill-green';
+        if (timePct > 30) return 'time-fill-orange';
+        return 'time-fill-red';
+    };
+    
+    const timeFillClass = getTimeFillColor();
+    const hasWarning = timeLeft <= 10;
+    const warningClass = hasWarning && !reducedMotion ? 'time-fill-warning' : '';
 
     const handleAnswer = useCallback((selectedAnswer: string) => {
         if (hasAnswered) return;
@@ -250,7 +261,7 @@ export const CombatScreen: React.FC<Props> = ({
                 </div>
 
                 <div
-                    className="sketch-box-light flex items-center justify-center grow min-h-[120px] md:min-h-0"
+                    className="sketch-box-light flex items-center justify-center grow min-h-[120px] md:min-h-0 bounce-smooth"
                     style={{fontSize: '5rem'}}
                 >
                     {enemy.type === EnemyType.BOSS ? '👑' : enemy.type === EnemyType.MINIBOSS ? '💀' : '👾'}
@@ -264,13 +275,13 @@ export const CombatScreen: React.FC<Props> = ({
                     </div>
                     <div className="time-track" aria-hidden="true" style={{height: '10px'}}>
                         <div
-                            className={`time-fill ${isLowTime ? (reducedMotion ? 'time-fill-danger-static' : 'time-fill-danger') : ''}`}
+                            className={`time-fill ${timeFillClass} ${warningClass}`}
                             style={{width: `${timePct}%`}}
                         />
                     </div>
                     <p className="text-lg mt-4 font-medium" style={{color: 'var(--ink-light)'}}>Vypočítej:</p>
-                    <p className="text-4xl md:text-5xl font-bold leading-tight"
-                       style={{color: 'var(--ink)', fontFamily: 'Caveat, cursive', padding: '0.5rem 0'}}>
+                    <p className="text-4xl md:text-5xl font-bold leading-tight math-num"
+                       style={{color: 'var(--ink)', padding: '0.5rem 0'}}>
                         {problem.prompt}
                     </p>
                 </div>
@@ -279,10 +290,11 @@ export const CombatScreen: React.FC<Props> = ({
             {/* Pravý sloupec: Odpovědi a inventář */}
             <div className="flex flex-col gap-3 w-full md:w-[40%]">
                 <div className="flex flex-col gap-3 grow justify-center">
-                    {answers.map(ans => (
+                    {answers.map((ans, index) => (
                         <button
                             key={ans}
-                            className="sketch-btn text-2xl py-3 w-full shadow-[0.25rem_0.25rem_0_var(--ink)] hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-[0.1rem_0.1rem_0_var(--ink)] transition-all"
+                            className="sketch-btn text-2xl py-3 w-full fade-in slide-up"
+                            style={{animationDelay: `${index * 0.1}s`}}
                             onClick={() => handleAnswer(ans)}
                             disabled={hasAnswered}
                         >

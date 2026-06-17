@@ -19,7 +19,7 @@ export const WrongAnswerDialog: React.FC<Props> = ({
             display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 40,
         }}>
             {/* ZMĚNA ZDE: Zvětšena padding, gap a šířka. Na PC (md:) je širší. */}
-            <div className="sketch-box px-8 py-8 md:px-10 md:py-10 flex flex-col items-center gap-6 mx-4 w-[90%] max-w-[380px] md:max-w-[550px]">
+            <div className="sketch-box px-8 py-8 md:px-10 md:py-10 flex flex-col items-center gap-6 mx-4 w-[90%] max-w-[380px] md:max-w-[550px] shake">
 
                 {/* ZMĚNA ZDE: Zvětšeno emoji */}
                 <p className="text-6xl md:text-7xl">❌</p>

@@ -10,7 +10,7 @@ interface Props {
 
 export const MenuScreen: React.FC<Props> = ({playerName, onPlay, onStats, onSettings, onLogout}) => (
     <div className="flex flex-col items-center justify-center h-full gap-6 px-6">
-        <h1 className="text-5xl font-bold" style={{color: 'var(--ink)'}}>VěžMat</h1>
+        <h1 className="text-5xl font-bold rpg-title" style={{color: 'var(--ink)'}}>VěžMat</h1>
         <p className="text-lg" style={{color: 'var(--ink-light)'}}>
             Vítej, {playerName}!
         </p>

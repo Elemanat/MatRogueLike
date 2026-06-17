@@ -36,7 +36,7 @@ export const EmptyRoomScreen: React.FC<Props> = ({rewardItem, onRest, onScavenge
                     position: 'absolute', inset: 0, background: 'rgba(44,44,62,0.85)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
                 }}>
-                    <div className="sketch-box px-6 py-8 flex flex-col items-center gap-4 mx-4 bg-[var(--paper)]">
+                    <div className="sketch-box px-6 py-8 flex flex-col items-center gap-4 mx-4 bg-[var(--paper)] fade-in slide-up">
                         <h3 className="text-3xl font-bold text-center" style={{color: 'var(--gold)'}}>Gratuluji!</h3>
                         <p className="text-lg text-center" style={{color: 'var(--ink)'}}>Při prohledávání prachu jsi našel předmět:</p>
 
