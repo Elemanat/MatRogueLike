@@ -11,7 +11,7 @@ function parseTimeout(raw: string | undefined): number {
 
 export function getApiRuntimeConfig(): ApiRuntimeConfig {
     return {
-        baseUrl: import.meta.env.VITE_API_BASE_URL ?? '/api',
+        baseUrl: import.meta.env.VITE_API_BASE_URL ?? '',
         timeoutMs: parseTimeout(import.meta.env.VITE_API_TIMEOUT_MS),
     };
 }

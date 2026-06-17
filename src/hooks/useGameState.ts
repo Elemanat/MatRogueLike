@@ -693,7 +693,7 @@ export function useGameState() {
                 });
 
                 // Use proper environment variable for API base URL
-                const baseUrl = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:3001';
+                const baseUrl = import.meta.env?.VITE_API_BASE_URL || '';
                 const res = await fetch(`${baseUrl}/api/problems/next?${params}`);
 
                 if (!res.ok) {

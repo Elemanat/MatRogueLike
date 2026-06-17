@@ -440,11 +440,11 @@ app.get('/api/problems/next', (req, res) => {
     }
 });
 
-const server = app.listen(PORT, () => {
+const server = app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`\n========================================`);
     console.log(`🚀 BACKEND SPUŠTĚN! 🚀`);
     console.log(`Kuchyně VěžMatu je otevřená!`);
-    console.log(`Server naslouchá na: http://localhost:${PORT}`);
+    console.log(`Server naslouchá na: http://0.0.0.0:${PORT}`);
     console.log(`========================================\n`);
 });
 

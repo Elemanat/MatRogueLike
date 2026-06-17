@@ -10,6 +10,8 @@ interface Props {
 export const SettingsScreen: React.FC<Props> = ({settings, onChange, onBack}) => {
     // Stav pro zobrazení kontaktního dialogu
     const [showContact, setShowContact] = useState(false);
+    // Stav pro zobrazení dotazníku
+    const [showSurvey, setShowSurvey] = useState(false);
 
     return (
         <div className="flex flex-col h-full px-4 py-6 gap-4 w-full relative">
@@ -31,14 +33,22 @@ export const SettingsScreen: React.FC<Props> = ({settings, onChange, onBack}) =>
                 </div>
 
                 {/* Kontakt */}
-                <div className="sketch-box-light px-4 py-3 flex justify-between items-center">
+                <div className="sketch-box-light px-4 py-3 flex justify-between items-center gap-2">
                     <span className="text-xl md:text-2xl">📧 Máš nápad nebo problém?</span>
-                    <button
-                        className="sketch-btn text-base md:text-xl py-1 px-4 text-center cursor-pointer"
-                        onClick={() => setShowContact(true)}
-                    >
-                        Kontakt
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            className="sketch-btn text-base md:text-xl py-1 px-4 text-center cursor-pointer"
+                            onClick={() => setShowContact(true)}
+                        >
+                            Kontakt
+                        </button>
+                        <button
+                            className="sketch-btn text-base md:text-xl py-1 px-4 text-center cursor-pointer"
+                            onClick={() => setShowSurvey(true)}
+                        >
+                            Dotazník
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -69,6 +79,37 @@ export const SettingsScreen: React.FC<Props> = ({settings, onChange, onBack}) =>
                         <button
                             className="sketch-btn w-full text-xl md:text-2xl py-3 mt-2"
                             onClick={() => setShowContact(false)}
+                        >
+                            Zavřít
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Dotazník Dialog */}
+            {showSurvey && (
+                <div style={{
+                    position: 'fixed', inset: 0, background: 'rgba(44,44,62,0.85)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
+                }}>
+                    <div className="sketch-box px-8 py-8 md:px-10 md:py-10 flex flex-col items-center gap-6 mx-4 w-[90%] max-w-[400px] md:max-w-[500px]">
+                        <p className="text-5xl md:text-6xl">📋</p>
+                        <h3 className="text-3xl md:text-4xl font-bold text-center text-(--ink)">Dotazník</h3>
+
+                        <p className="text-base md:text-xl text-center text-(--ink-light)">
+                            Tvůj názor je pro nás velmi důležitý! Pomož nám vylepšit hru tím, že vyplníš náš krátký dotazník.
+                        </p>
+
+                        <button
+                            className="sketch-btn w-full text-xl md:text-2xl py-3"
+                            onClick={() => window.open('https://forms.gle/uEiGhANTiNeBV5cc7', '_blank')}
+                        >
+                            Otevřít dotazník →
+                        </button>
+
+                        <button
+                            className="sketch-btn w-full text-xl md:text-2xl py-3 mt-2"
+                            onClick={() => setShowSurvey(false)}
                         >
                             Zavřít
                         </button>
