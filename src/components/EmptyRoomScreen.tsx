@@ -21,7 +21,6 @@ export const EmptyRoomScreen: React.FC<Props> = ({rewardItem, onRest, onScavenge
     );
     const [scavenged, setScavenged] = useState(false);
 
-    // Funkce, která po kliknutí zakáže tlačítko a zavolá logiku o patro výš
     const handleScavenge = () => {
         setScavenged(true);
         onScavenge();
@@ -30,17 +29,21 @@ export const EmptyRoomScreen: React.FC<Props> = ({rewardItem, onRest, onScavenge
     return (
         <div className="flex flex-col h-full px-4 py-6 gap-6 justify-between relative">
 
-            {/* Modal pro nalezený předmět (zobrazí se jen když dostaneme rewardItem) */}
             {rewardItem && (
                 <div style={{
                     position: 'absolute', inset: 0, background: 'rgba(44,44,62,0.85)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
                 }}>
-                    <div className="sketch-box px-6 py-8 flex flex-col items-center gap-4 mx-4 bg-[var(--paper)] fade-in slide-up">
+                    <div className="sketch-box px-6 py-8 flex flex-col items-center gap-4 mx-4 bg-(--paper) fade-in slide-up">
                         <h3 className="text-3xl font-bold text-center" style={{color: 'var(--gold)'}}>Gratuluji!</h3>
                         <p className="text-lg text-center" style={{color: 'var(--ink)'}}>Při prohledávání prachu jsi našel předmět:</p>
 
-                        <div className="text-6xl my-2 drop-shadow-md">{rewardItem.icon}</div>
+                        <img
+                            src={rewardItem.icon}
+                            alt={rewardItem.name}
+                            className="h-20 w-20 object-contain my-2 drop-shadow-md"
+                        />
+
                         <p className="text-2xl font-bold text-center" style={{color: 'var(--ink)'}}>{rewardItem.name}</p>
                         <p className="text-sm text-center italic" style={{color: 'var(--ink-light)'}}>{rewardItem.description}</p>
 
@@ -54,13 +57,15 @@ export const EmptyRoomScreen: React.FC<Props> = ({rewardItem, onRest, onScavenge
             <h2 className="text-2xl font-bold text-center" style={{color: 'var(--ink)'}}>Táborák</h2>
 
             <div className="flex flex-col items-center gap-8 flex-1 justify-center">
-                {/* Placeholder ohniste/tabora */}
-                <div className="sketch-box flex items-center justify-center text-6xl"
-                     style={{width: '5.5rem', height: '5.5rem', borderRadius: '50%'}}>
-                    🔥
-                </div>
 
-                {/* Bublina s využitím náhodného komentáře */}
+
+                    <img
+                        src="/assets/icons/campfire_icon.png"
+                        alt="Táborák"
+                        className="h-30 w-30 object-contain"
+                    />
+
+
                 <div className="wizard-bubble w-full">
                     <p className="text-lg text-center" style={{color: 'var(--ink)'}}>
                         {comment} <br/><br/> Co chceš udělat jako další?

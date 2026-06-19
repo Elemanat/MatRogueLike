@@ -3,6 +3,7 @@ import type {Problem, Item, Enemy} from '../types/game';
 import {EnemyType, ItemId, RoomType} from '../types/game';
 import {ItemBar} from './ItemBar';
 import {HealthBar} from './HealthBar';
+import {TextWithFractions} from './TextWithFractions';
 
 const ROOM_TYPE_LABEL: Record<string, string> = {
     EMPTY: '🌫️ Prázdná místnost',
@@ -53,7 +54,6 @@ interface Props {
     peekNextRoom: RoomType | null;
     hasRerolledPeek: boolean;
     roundTimeSeconds: number;
-    reducedMotion: boolean;
     showWrongAnswerDialog?: boolean;
     onAnswer: (answer: string, correct: boolean) => void;
     onUseItem: (id: Item['id']) => void;
@@ -69,7 +69,6 @@ export const CombatScreen: React.FC<Props> = ({
                                                   peekNextRoom,
                                                   hasRerolledPeek,
                                                   roundTimeSeconds,
-                                                  reducedMotion,
                                                   showWrongAnswerDialog,
                                                   onAnswer,
                                                   onUseItem,
@@ -82,7 +81,6 @@ export const CombatScreen: React.FC<Props> = ({
     const [timeLeft, setTimeLeft] = useState(roundTimeSeconds);
     const [timeCap, setTimeCap] = useState(roundTimeSeconds);
 
-    // Nový stav pro efekt "míchání" místnosti
     const [isShuffling, setIsShuffling] = useState(false);
 
     useEffect(() => {
@@ -128,12 +126,10 @@ export const CombatScreen: React.FC<Props> = ({
         }
     }, [onUseItem, onAddTimeUsed, roundTimeSeconds]);
 
-    // Obalení funkce onPeekSkip pro přidání vizuálního delaye
     const handlePeekSkip = useCallback(() => {
         setIsShuffling(true);
-        onPeekSkip(); // Řekneme backendu/stavu o změnu
+        onPeekSkip();
 
-        // Animace poběží 600ms, pak ukážeme výsledek
         setTimeout(() => {
             setIsShuffling(false);
         }, 600);
@@ -146,17 +142,16 @@ export const CombatScreen: React.FC<Props> = ({
             : 'var(--ink)';
     const isLowTime = timeLeft <= 5;
     const timePct = Math.max(0, Math.min(100, (timeLeft / timeCap) * 100));
-    
-    // Dynamická barva timeru podle zbývajícího času
+
     const getTimeFillColor = () => {
         if (timePct > 60) return 'time-fill-green';
         if (timePct > 30) return 'time-fill-orange';
         return 'time-fill-red';
     };
-    
+
     const timeFillClass = getTimeFillColor();
     const hasWarning = timeLeft <= 10;
-    const warningClass = hasWarning && !reducedMotion ? 'time-fill-warning' : '';
+    const warningClass = hasWarning ? 'time-fill-warning' : '';
 
     const handleAnswer = useCallback((selectedAnswer: string) => {
         if (hasAnswered) return;
@@ -170,7 +165,6 @@ export const CombatScreen: React.FC<Props> = ({
     return (
         <div className="flex flex-col md:flex-row h-full px-3 py-3 gap-5 relative w-full items-stretch overflow-y-auto">
 
-            {/* ADD_TIME toast */}
             {showTimeToast && (
                 <div
                     className="toast-slide"
@@ -186,21 +180,17 @@ export const CombatScreen: React.FC<Props> = ({
                 </div>
             )}
 
-            {/* PEEK modal */}
             {peekNextRoom && (
                 <div style={{
-                    // ZMĚNA: Použito position: fixed místo absolute, aby dialog překryl úplně vše i při scrollování
                     position: 'fixed', inset: 0, background: 'rgba(44,44,62,0.85)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
                 }}>
-                    {/* ZMĚNA: Přidáno responzivní škálování pro velký monitor */}
                     <div
                         className="sketch-box px-8 py-8 md:px-10 md:py-10 flex flex-col items-center gap-6 mx-4 w-[90%] max-w-[400px] md:max-w-[500px]">
                         <p className="text-3xl md:text-4xl font-bold text-center text-(--ink)">
                             🔭 Příští místnost
                         </p>
 
-                        {/* ZMĚNA: Dynamický obsah založený na stavu "míchání" */}
                         {isShuffling ? (
                             <div className="flex flex-col items-center justify-center min-h-[140px] animate-pulse">
                                 <p className="text-6xl mb-3">🌪️</p>
@@ -212,7 +202,6 @@ export const CombatScreen: React.FC<Props> = ({
                                 <p className="text-4xl md:text-5xl font-bold text-center">
                                     {ROOM_TYPE_LABEL[peekNextRoom]}
                                 </p>
-                                {/* ZMĚNA: Zpráva o úspěšném přerulování pro jasnější feedback */}
                                 {hasRerolledPeek && (
                                     <p className="text-xl md:text-2xl font-bold mt-4" style={{color: 'var(--green)'}}>
                                         ✨ Úspěšně změněno!
@@ -225,7 +214,7 @@ export const CombatScreen: React.FC<Props> = ({
                             <button
                                 className="sketch-btn text-xl md:text-2xl py-3"
                                 onClick={onClosePeek}
-                                disabled={isShuffling} // Zakázáno klikat během míchání
+                                disabled={isShuffling}
                             >
                                 ✓ V pořádku
                             </button>
@@ -234,7 +223,7 @@ export const CombatScreen: React.FC<Props> = ({
                                 <button
                                     className="sketch-btn sketch-btn-warning text-xl md:text-2xl py-3"
                                     onClick={handlePeekSkip}
-                                    disabled={isShuffling} // Zakázáno klikat během míchání
+                                    disabled={isShuffling}
                                 >
                                     🔄 Změnit místnost
                                 </button>
@@ -244,7 +233,6 @@ export const CombatScreen: React.FC<Props> = ({
                 </div>
             )}
 
-            {/* Levý sloupec: Nepřítel a otázka */}
             <div className="flex flex-col gap-3 w-full md:w-[60%] shrink-0">
                 <div className="sketch-box px-4 py-3">
                     <div className="flex justify-between items-center mb-2">
@@ -282,12 +270,11 @@ export const CombatScreen: React.FC<Props> = ({
                     <p className="text-lg mt-4 font-medium" style={{color: 'var(--ink-light)'}}>Vypočítej:</p>
                     <p className="text-4xl md:text-5xl font-bold leading-tight math-num"
                        style={{color: 'var(--ink)', padding: '0.5rem 0'}}>
-                        {problem.prompt}
+                        <TextWithFractions text={problem.prompt}/>
                     </p>
                 </div>
             </div>
 
-            {/* Pravý sloupec: Odpovědi a inventář */}
             <div className="flex flex-col gap-3 w-full md:w-[40%]">
                 <div className="flex flex-col gap-3 grow justify-center">
                     {answers.map((ans, index) => (
@@ -298,7 +285,7 @@ export const CombatScreen: React.FC<Props> = ({
                             onClick={() => handleAnswer(ans)}
                             disabled={hasAnswered}
                         >
-                            {ans}
+                            <TextWithFractions text={ans}/>
                         </button>
                     ))}
                 </div>
@@ -312,3 +299,4 @@ export const CombatScreen: React.FC<Props> = ({
         </div>
     );
 };
+

@@ -146,7 +146,6 @@ function App() {
                         <SettingsScreen
                             settings={state.settings}
                             onChange={settings => dispatch({type: 'UPDATE_SETTINGS', settings})}
-                            // OPRAVENO: Odstraněn onResetSessionStats
                             onBack={() => dispatch({type: 'TO_MENU'})}
                         />
                     )}
@@ -181,7 +180,6 @@ function App() {
                             inventory={state.inventory}
                             peekNextRoom={state.peekNextRoom}
                             roundTimeSeconds={state.settings.roundTimeSeconds}
-                            reducedMotion={state.settings.reducedMotion}
                             showWrongAnswerDialog={!!state.wrongAnswerDialog}
                             onAnswer={(ans, correct) => {
                                 actions.answer(ans ?? '', correct);

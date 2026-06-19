@@ -47,7 +47,14 @@ export const ExistingPlayerLoginScreen: React.FC<Props> = ({onSubmit, onBack, on
 
             {error && (
                 <p className="text-lg" style={{color: 'var(--danger)', textAlign: 'center'}}>
-                    ❌ {error}
+                    <div className="flex items-center gap-2">
+                        <img
+                            src={'/assets/icons/cross_icon.png'}
+                            alt={'Špatná odpověď'}
+                            className="h-8 w-8 object-contain"
+                        />
+                        <span>{error}</span>
+                    </div>
                 </p>
             )}
 

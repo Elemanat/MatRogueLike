@@ -121,7 +121,14 @@ export const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
 
                             {error && (
                                 <p className="text-sm text-center font-semibold" style={{color: 'var(--danger)'}}>
-                                    ❌ {error}
+                                    <div className="flex items-center gap-2">
+                                        <img
+                                            src={'/assets/icons/cross_icon.png'}
+                                            alt={'Špatná odpověď'}
+                                            className="h-8 w-8 object-contain"
+                                        />
+                                        <span>{error}</span>
+                                    </div>
                                 </p>
                             )}
 
@@ -145,21 +152,32 @@ export const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
                     </>
                 ) : (
                     <>
-                        <h2 className="text-2xl font-bold mb-6 text-center">
-                            ✅ Tvůj kód!
+                        <h2 className="flex justify-center items-center gap-3 text-2xl font-bold mb-6">
+                            <img
+                                src={'/assets/icons/fajvka_icon.png'}
+                                alt={'Kód obnoven'}
+                                className="h-8 w-8 object-contain"
+                            />
+                            Tvůj kód!
                         </h2>
 
                         <div className="text-center mb-8">
-                            <p className="text-5xl font-bold font-mono tracking-widest" style={{color: 'var(--primary)'}}>
+                            <p className="text-5xl font-bold font-mono tracking-widest"
+                               style={{color: 'var(--primary)'}}>
                                 {recoveredCode}
                             </p>
                         </div>
 
                         <button
-                            className="sketch-btn sketch-btn-primary w-full text-lg py-3"
+                            className="w-full sketch-btn sketch-btn-primary text-xl py-2 flex items-center justify-center gap-3"
                             onClick={handleCopyAndClose}
                         >
-                            ✓ Zkopírovat a zavřít
+                            <img
+                                src="/assets/icons/gate_icon.png"
+                                alt="Vstup"
+                                className="h-8 w-8 object-contain"
+                            />
+                            Přihlásit
                         </button>
                     </>
                 )}

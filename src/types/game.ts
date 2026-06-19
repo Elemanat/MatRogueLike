@@ -72,6 +72,8 @@ export interface Tower {
     topic: string;
     floors: number;
     roomsPerFloor: number;
+    badge_image: string;
+    tower_image: string;
 }
 
 export interface PlayerStats {
@@ -83,8 +85,6 @@ export interface PlayerStats {
 
 export interface GameSettings {
     roundTimeSeconds: number;
-    soundEnabled: boolean;
-    reducedMotion: boolean;
 }
 
 export interface GameState {

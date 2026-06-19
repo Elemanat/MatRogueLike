@@ -16,10 +16,8 @@ const STORAGE_KEY_LAST_PLAYER = 'vezmat.lastPlayer.v1';
 const STORAGE_KEY_PLAYER_ID = 'vezmat.playerId.v1';
 const STORAGE_KEY_PLAYER_CODE = 'vezmat.playerCode.v1';
 
-const defaultSettings: GameSettings = {
-    roundTimeSeconds: 20,
-    soundEnabled: true,
-    reducedMotion: false,
+const defaultSettings: { roundTimeSeconds: number } = {
+    roundTimeSeconds: 30
 };
 
 function isPlayerStats(value: unknown): value is PlayerStats {

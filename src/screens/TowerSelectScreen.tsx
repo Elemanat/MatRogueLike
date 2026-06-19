@@ -27,7 +27,7 @@ export const TowerSelectScreen: React.FC<Props> = ({onSelect, onBack}) => {
                     return (
                         <button
                             key={tower.id}
-                            className={`sketch-box relative flex flex-col justify-between items-center px-4 py-6 cursor-pointer transition-all border-2 flex-none w-full min-h-[200px] md:min-h-0 md:h-full md:flex-1 md:w-auto md:min-w-[220px] bg-cover bg-bottom text-center ${
+                            className={`sketch-box relative flex flex-col justify-between items-center px-4 py-6 cursor-pointer transition-all border-2 flex-none w-full min-h-[250px] md:min-h-0 md:h-full md:flex-1 md:w-auto md:min-w-[220px] bg-cover bg-bottom text-center ${
                                 isSelected
                                     ? 'border-(--gold) shadow-[0.3rem_0.3rem_0_var(--gold)] ring-4 ring-(--gold) ring-opacity-50'
                                     : 'border-(--ink) shadow-[0.2rem_0.2rem_0_var(--ink)]'
@@ -38,17 +38,39 @@ export const TowerSelectScreen: React.FC<Props> = ({onSelect, onBack}) => {
                             }}
                             onClick={() => setSelected(tower)}
                         >
-                            <div className="flex flex-col items-center w-full">
-                                {isSelected && (
-                                    <div className="absolute top-2 right-3 text-3xl text-(--gold) font-bold">✓</div>
+                            <div className="flex flex-col items-center w-full relative">
+                                {/* Ikonka Badge vlevo nahoře */}
+                                {tower.badge_image && (
+                                    <img
+                                        src={tower.badge_image}
+                                        alt="Odznak věže"
+                                        className="absolute -top-2 -left-2 h-10 w-10 md:h-12 md:w-12 object-contain"
+                                    />
                                 )}
-                                <div className="text-2xl font-bold text-(--ink) mt-4 mb-2 leading-tight">
+
+                                {/* Fajfka výběru vpravo nahoře */}
+                                {isSelected && (
+                                    <div className="absolute top-0 right-1 text-3xl text-(--gold) font-bold">✓</div>
+                                )}
+
+                                <div className="text-2xl font-bold text-(--ink) mt-6 mb-2 leading-tight">
                                     {tower.name}
                                 </div>
                                 <div className="text-sm font-medium text-(--ink-light) italic">
                                     {tower.topic}
                                 </div>
                             </div>
+
+                            {/* Obrázek samotné věže uprostřed karty */}
+                            {tower.tower_image && (
+                                <div className="flex-1 flex items-center justify-center w-full my-4">
+                                    <img
+                                        src={tower.tower_image}
+                                        alt={`Věž ${tower.name}`}
+                                        className="h-28 md:h-28 w-35 object-contain drop-shadow-md transition-transform duration-200 hover:scale-105"
+                                    />
+                                </div>
+                            )}
 
                             <div
                                 className="mt-auto pt-4 border-t border-(--ink-light) border-dashed w-full text-sm font-bold text-(--ink-light)">
