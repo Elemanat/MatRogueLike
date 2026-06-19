@@ -13,7 +13,7 @@ interface Props {
     onRecover: (playerName: string, secretAnimal: string) => Promise<string>;
 }
 
-export const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
+const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
     const [playerName, setPlayerName] = useState('');
     const [selectedAnimal, setSelectedAnimal] = useState<string>('🐶');
     const [isLoading, setIsLoading] = useState(false);
@@ -173,11 +173,19 @@ export const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
                             onClick={handleCopyAndClose}
                         >
                             <img
+                                src="/assets/icons/clipboard_icon.png"
+                                alt="Clipboard icon"
+                                className="h-7 w-7 object-contain"
+                            />
+
+                            Zkopírovat a vstoupit
+
+                            <img
                                 src="/assets/icons/gate_icon.png"
                                 alt="Vstup"
                                 className="h-8 w-8 object-contain"
                             />
-                            Přihlásit
+
                         </button>
                     </>
                 )}
@@ -185,3 +193,4 @@ export const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
         </div>
     );
 };
+export default RecoverCodeDialog

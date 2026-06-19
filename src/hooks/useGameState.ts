@@ -2,13 +2,10 @@ import {useEffect, useReducer} from 'react';
 import {Screen, RoomType, EnemyType, ItemId} from '../types/game';
 import type {GameState, Item, Tower, Enemy, Problem, PlayerStats, GameSettings} from '../types/game';
 import {ALL_ITEMS} from '../services/gameCatalog';
+import {ALL_ENEMIES } from '../services/gameCatalog';
 import {apiClient} from '../services/api';
 import {mapProblemDtoToProblem} from '../services/api/mappers';
 import type {RunAnswerResponse} from '../services/api/contracts';
-
-const ENEMIES_NORMAL = ['Zlý zlomek', 'Záludná rovnice', 'Číselný duch', 'Rozbitá desetina'];
-const ENEMIES_MINIBOSS = ['Miniboss: Velký jmenovatel', 'Miniboss: Mocný součin'];
-const ENEMIES_BOSS = ['BOSS: Arcivládce Čísel', 'BOSS: Nekonečný Zlomek'];
 
 const STORAGE_KEY_SESSION_STATS = 'vezmat.sessionStats.v1';
 const STORAGE_KEY_SETTINGS = 'vezmat.settings.v1';
@@ -71,9 +68,19 @@ function resolveRewardItem(rewardItemId?: string): Item {
 }
 
 function makeEnemy(type: EnemyType): Enemy {
-    if (type === EnemyType.BOSS) return {name: pick(ENEMIES_BOSS), type, maxHp: 5, hp: 5};
-    if (type === EnemyType.MINIBOSS) return {name: pick(ENEMIES_MINIBOSS), type, maxHp: 3, hp: 3};
-    return {name: pick(ENEMIES_NORMAL), type, maxHp: 1, hp: 1};
+    const availableEnemies = ALL_ENEMIES.filter(e => e.type === type);
+
+    const template = pick(availableEnemies);
+
+    const hp = type === EnemyType.BOSS ? 5 : type === EnemyType.MINIBOSS ? 3 : 1;
+
+    return {
+        name: template.name,
+        type: template.type,
+        maxHp: hp,
+        hp: hp,
+        icon: template.icon
+    };
 }
 
 function generateRoomType(room: number, roomsPerFloor: number, floor: number, floors: number): RoomType {

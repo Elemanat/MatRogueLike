@@ -48,6 +48,7 @@ export interface Enemy {
     type: EnemyType;
     maxHp: number;
     hp: number;
+    icon: string;
 }
 
 export interface Item {

@@ -10,7 +10,7 @@ import {WrongAnswerDialog} from './components/WrongAnswerDialog';
 import {LoginScreen} from './screens/LoginScreen';
 import {NewPlayerScreen} from './screens/NewPlayerScreen';
 import {ExistingPlayerLoginScreen} from './screens/ExistingPlayerLoginScreen';
-import {RecoverCodeDialog} from './screens/RecoverCodeDialog';
+import RecoverCodeDialog from './screens/RecoverCodeDialog';
 import {PlayerCodeDialog} from './screens/PlayerCodeDialog';
 import {MenuScreen} from './screens/MenuScreen';
 import {TowerSelectScreen} from './screens/TowerSelectScreen';

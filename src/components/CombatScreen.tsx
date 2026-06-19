@@ -248,11 +248,12 @@ export const CombatScreen: React.FC<Props> = ({
                     )}
                 </div>
 
-                <div
-                    className="sketch-box-light flex items-center justify-center grow min-h-[120px] md:min-h-0 bounce-smooth"
-                    style={{fontSize: '5rem'}}
-                >
-                    {enemy.type === EnemyType.BOSS ? '👑' : enemy.type === EnemyType.MINIBOSS ? '💀' : '👾'}
+                <div className="sketch-box-light flex items-center justify-center grow min-h-30 md:min-h-0">
+                    <img
+                        src={enemy.icon}
+                        alt={enemy.name}
+                        className="h-32 w-32 md:h-48 md:w-48 object-contain bounce-smooth drop-shadow-md"
+                    />
                 </div>
 
                 <div className="sketch-box px-5 py-4 text-center shrink-0">
