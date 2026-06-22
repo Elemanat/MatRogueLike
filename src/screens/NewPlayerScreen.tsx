@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import { WizardTutorialScreen } from './WizardTutorialScreen';
 
 const ANIMALS = [
     {emoji: '🐶', label: 'Pes', icon: '/assets/icons/dog_icon_no_bg.png'},
@@ -10,20 +11,42 @@ const ANIMALS = [
 
 interface Props {
     onSubmit: (name: string, secretAnimal: string) => void;
+    // Přidána funkce pro ověření před spuštěním tutoriálu
+    onCheckName: (name: string) => Promise<boolean>;
     onBack: () => void;
     isLoading?: boolean;
     error?: string;
 }
 
-export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, error}) => {
+export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onCheckName, onBack, isLoading, error}) => {
     const [name, setName] = useState('');
     const [selectedAnimal, setSelectedAnimal] = useState<string>('🐶');
+    const [showTutorial, setShowTutorial] = useState(false);
 
-    const handleSubmit = () => {
+    // Přepnuto na asynchronní volání
+    const handleInitialSubmit = async () => {
         if (name.trim()) {
-            onSubmit(name.trim(), selectedAnimal);
+            // Zavoláme parent komponentu, ať jméno zkontroluje
+            const isNameAvailable = await onCheckName(name.trim());
+
+            // Tutoriál se ukáže jen tehdy, když backend potvrdí, že jméno je volné
+            if (isNameAvailable) {
+                setShowTutorial(true);
+            }
         }
     };
+
+    const handleFinishTutorial = () => {
+        onSubmit(name.trim(), selectedAnimal);
+    };
+
+    if (showTutorial) {
+        return (
+            <WizardTutorialScreen
+                onFinish={handleFinishTutorial}
+            />
+        );
+    }
 
     return (
         <div className="flex flex-col items-center justify-center h-full gap-8 px-6">
@@ -43,22 +66,20 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, e
                     placeholder="Napiš své jméno…"
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                    onKeyDown={e => e.key === 'Enter' && handleInitialSubmit()}
                     maxLength={20}
                     disabled={isLoading}
                 />
 
                 {error && (
-                    <p className="text-base font-semibold" style={{color: 'var(--red)'}}>
-                        <div className="flex items-center gap-2">
-                            <img
-                                src={'/assets/icons/cross_icon.png'}
-                                alt={'Špatná odpověď'}
-                                className="h-8 w-8 object-contain"
-                            />
-                            <span>{error}</span>
-                        </div>
-                    </p>
+                    <div className="text-base font-semibold flex items-center gap-2" style={{color: 'var(--red)'}}>
+                        <img
+                            src={'/assets/icons/cross_icon.png'}
+                            alt={'Špatná odpověď'}
+                            className="h-8 w-8 object-contain"
+                        />
+                        <span>{error}</span>
+                    </div>
                 )}
             </div>
 
@@ -114,7 +135,7 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, e
                 <button
                     className="sketch-btn sketch-btn-primary text-xl py-2 flex-1 flex items-center justify-center gap-3 disabled:opacity-40 transition-opacity"
                     disabled={!name.trim() || isLoading}
-                    onClick={handleSubmit}
+                    onClick={handleInitialSubmit}
                 >
                     <img
                         src="/assets/icons/gate_icon.png"
@@ -127,4 +148,3 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onBack, isLoading, e
         </div>
     );
 };
-

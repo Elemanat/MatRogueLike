@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type {GameSettings} from '../types/game';
+import { WizardTutorialScreen } from './WizardTutorialScreen';
 
 interface Props {
     settings: GameSettings;
@@ -7,11 +8,25 @@ interface Props {
     onBack: () => void;
 }
 
-export const SettingsScreen: React.FC<Props> = ({settings, onChange, onBack}) => {
-    // Stav pro zobrazení kontaktního dialogu
+export const SettingsScreen: React.FC<Props> = ({
+                                                    settings,
+                                                    onChange,
+                                                    onBack,
+                                                }) => {
     const [showContact, setShowContact] = useState(false);
-    // Stav pro zobrazení dotazníku
     const [showSurvey, setShowSurvey] = useState(false);
+
+    // Nový lokální stav pro tutoriál
+    const [showTutorial, setShowTutorial] = useState(false);
+
+    // Pokud je aktivní tutoriál, rovnou vrátíme jeho obrazovku (stejně jako v NewPlayerScreen)
+    if (showTutorial) {
+        return (
+            <WizardTutorialScreen
+                onFinish={() => setShowTutorial(false)} // Po dokončení ho to vrátí zpět do nastavení
+            />
+        );
+    }
 
     return (
         <div className="flex flex-col h-full px-4 py-6 gap-4 w-full relative">
@@ -64,6 +79,24 @@ export const SettingsScreen: React.FC<Props> = ({settings, onChange, onBack}) =>
                         </button>
                     </div>
                 </div>
+
+                {/* Zopakovat tutoriál */}
+                <div className="sketch-box-light px-4 py-3 flex justify-between items-center gap-2">
+                    <span className="text-xl md:text-2xl flex items-center gap-3">
+                        <img
+                            src="/assets/wizard.png"
+                            alt="Čaroděj"
+                            className="h-10 w-10 object-contain"
+                        />
+                        Tutoriál
+                    </span>
+                    <button
+                        className="sketch-btn text-base md:text-xl py-1 px-4 text-center cursor-pointer"
+                        onClick={() => setShowTutorial(true)}
+                    >
+                        Základní výcvik
+                    </button>
+                </div>
             </div>
 
             <button
@@ -84,7 +117,7 @@ export const SettingsScreen: React.FC<Props> = ({settings, onChange, onBack}) =>
                     position: 'fixed', inset: 0, background: 'rgba(44,44,62,0.85)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
                 }}>
-                    <div className="sketch-box px-8 py-8 md:px-10 md:py-10 flex flex-col items-center gap-6 mx-4 w-[90%] max-w-[400px] md:max-w-[500px]">
+                    <div className="sketch-box px-8 py-8 md:px-10 md:py-10 flex flex-col items-center gap-6 mx-4 w-[90%] max-w-100 md:max-w-125">
                         <p className="text-5xl md:text-6xl">
                             <img
                                 src="/assets/icons/letter_icon.png"

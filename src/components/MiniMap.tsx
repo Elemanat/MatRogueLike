@@ -55,13 +55,13 @@ export const MiniMap: React.FC<Props> = ({ tower, floor, room }) => {
                   );
                 })}
 
-                {/* Boss/Miniboss ikona na konci patra - emoji, lze později nahradit obrázky */}
-                <span 
-                  className="text-[0.6rem] ml-[0.065rem]"
+                {/* Boss/Miniboss ikona na konci patra */}
+                <img 
+                  src={isBossFloor ? '/assets/icons/crown_icon.png' : '/assets/icons/skull_icon.png'}
+                  alt={isBossFloor ? 'Boss' : 'Miniboss'}
                   title={isBossFloor ? 'Boss' : 'Miniboss'}
-                >
-                  {isBossFloor ? '👑' : '💀'}
-                </span>
+                  className="w-3 h-3"
+                />
               </div>
           );
         })}

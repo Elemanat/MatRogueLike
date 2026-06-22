@@ -2,7 +2,7 @@ import {useEffect, useReducer} from 'react';
 import {Screen, RoomType, EnemyType, ItemId} from '../types/game';
 import type {GameState, Item, Tower, Enemy, Problem, PlayerStats, GameSettings} from '../types/game';
 import {ALL_ITEMS} from '../services/gameCatalog';
-import {ALL_ENEMIES } from '../services/gameCatalog';
+import {ALL_ENEMIES} from '../services/gameCatalog';
 import {apiClient} from '../services/api';
 import {mapProblemDtoToProblem} from '../services/api/mappers';
 import type {RunAnswerResponse} from '../services/api/contracts';
@@ -187,7 +187,8 @@ type Action =
     | { type: 'RESET_SESSION_STATS' }
     | { type: 'CLOSE_WRONG_ANSWER_DIALOG' }
     | { type: 'CAMP_REST' }
-    | { type: 'CAMP_SCAVENGE' };
+    | { type: 'CAMP_SCAVENGE' }
+    | { type: 'TO_GAMEOVER' };
 
 type ResolvedRunAnswerResponse = Omit<RunAnswerResponse, 'nextProblem'> & {
     nextProblem?: Problem | null;
@@ -431,6 +432,16 @@ function reducer(state: GameState, action: Action): GameState {
 
         case 'CLOSE_WRONG_ANSWER_DIALOG':
             return {...state, wrongAnswerDialog: null};
+
+        case 'TO_GAMEOVER':
+            return {
+                ...state,
+                playerHp: 0, // Vynulujeme životy, protože to vzdal
+                currentScreen: Screen.GAMEOVER, // Přepneme obrazovku
+                currentEnemy: null,
+                currentProblem: null
+            };
+
         case 'CAMP_REST':
             return advanceRoom({...state, playerHp: Math.min(state.playerMaxHp, state.playerHp + 1)});
 
@@ -737,7 +748,8 @@ export function useGameState() {
             if (state.playerId) window.localStorage.setItem(STORAGE_KEY_PLAYER_ID, state.playerId);
             if (state.playerCode) window.localStorage.setItem(STORAGE_KEY_PLAYER_CODE, state.playerCode);
         } catch {
-            /* empty */ }
+            /* empty */
+        }
     }, [state.sessionStats, state.settings, state.playerName, state.playerId, state.playerCode]);
 
     return {state, dispatch, actions: {startRun, answer, createNewPlayer, loginByCode, useItem, recoverCode}};

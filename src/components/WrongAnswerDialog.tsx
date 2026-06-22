@@ -52,7 +52,15 @@ export const WrongAnswerDialog: React.FC<Props> = ({
                 </div>
 
                 <p className="text-xl md:text-2xl text-center font-bold" style={{color: 'var(--ink)'}}>
-                    ❤️ Ztratil jsi jedno srdce
+                    <div className="flex items-center gap-2">
+                        <img
+                            src="/assets/icons/heart_full_icon.png"
+                            alt="¨Srdce"
+                            className="h-8 w-8 object-contain"
+                        />
+                        Ztratil jsi jedno srdce
+                    </div>
+
                 </p>
 
                 <button

@@ -73,6 +73,7 @@ function App() {
                         room={state.room}
                         playerHp={state.playerHp}
                         playerMaxHp={state.playerMaxHp}
+                        onSurrender={() => dispatch({type: 'TO_GAMEOVER'})}
                     />
                 )}
 
@@ -95,6 +96,19 @@ function App() {
 
                     {state.currentScreen === Screen.NEW_PLAYER && (
                         <NewPlayerScreen
+                            onCheckName={async (name: string) => {
+                                try {
+                                    await apiClient.players.getStats(name);
+
+                                    setNewPlayerError('Tohle jméno už někdo má. Zkus si vymyslet jiné!');
+                                    return false;
+                                } catch (err) {
+                                    console.log('[Ověření jména] Očekávaná chyba - jméno je volné:', err);
+
+                                    setNewPlayerError('');
+                                    return true;
+                                }
+                            }}
                             onSubmit={handleCreateNewPlayer}
                             onBack={() => {
                                 setNewPlayerError('');
@@ -135,10 +149,14 @@ function App() {
                         />
                     )}
 
-                    {state.currentScreen === Screen.INTRO && state.selectedTower && (
+                    {/* --- UPRAVENO: Předáváme stav a ukládáme do localStorage --- */}
+                    {state.currentScreen === Screen.INTRO && state.selectedTower && state.playerName && (
                         <IntroScreen
                             tower={state.selectedTower}
-                            onContinue={() => actions.startRun()}
+                            playerName={state.playerName}
+                            onContinue={() => {
+                                actions.startRun();
+                            }}
                         />
                     )}
 
@@ -159,10 +177,10 @@ function App() {
 
                     {state.currentScreen === Screen.EMPTY_ROOM && (
                         <EmptyRoomScreen
-                            rewardItem={state.rewardItem} // <--- PŘIDAT TOTO
+                            rewardItem={state.rewardItem}
                             onRest={() => dispatch({type: 'CAMP_REST'})}
                             onScavenge={() => dispatch({type: 'CAMP_SCAVENGE'})}
-                            onTakeReward={() => dispatch({type: 'TAKE_REWARD'})} // <--- A TOTO
+                            onTakeReward={() => dispatch({type: 'TAKE_REWARD'})}
                         />
                     )}
 
@@ -229,7 +247,6 @@ function App() {
                 </div>
             </div>
 
-            {/* Ošetřeno pro nové rozhraní GameState / Problem */}
             {state.wrongAnswerDialog && (
                 <WrongAnswerDialog
                     prompt={state.wrongAnswerDialog.prompt}

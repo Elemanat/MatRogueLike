@@ -65,17 +65,17 @@ export const EmptyRoomScreen: React.FC<Props> = ({rewardItem, onRest, onScavenge
                         className="h-30 w-30 object-contain"
                     />
 
-
-                <div className="wizard-bubble w-full">
-                    <p className="text-lg text-center" style={{color: 'var(--ink)'}}>
-                        {comment} <br/><br/> Co chceš udělat jako další?
-                    </p>
-                </div>
+                    <div className="wizard-bubble w-full md:max-w-sm">
+                        <p className="text-lg text-center" style={{color: 'var(--ink)'}}>
+                            {comment} <br/><br/> Co chceš udělat jako další?
+                        </p>
+                    </div>
+                {/*</div>*/}
             </div>
 
             <div className="flex flex-col gap-3">
                 <button className="sketch-btn sketch-btn-primary text-xl py-2 w-full" onClick={onRest} disabled={!!rewardItem}>
-                    Odpočinout si (+1 HP)
+                    Odpočinout si (+1 život)
                 </button>
                 <button
                     className="sketch-btn text-xl py-2 w-full"
