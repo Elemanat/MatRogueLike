@@ -2,6 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {useGameState} from './hooks/useGameState';
 import {Screen, ItemId} from './types/game';
 import {apiClient} from './services/api';
+import {preloadGameImages} from './services/gameCatalog';
 import {HUD} from './components/HUD';
 import {CombatScreen} from './components/CombatScreen';
 import {EmptyRoomScreen} from './components/EmptyRoomScreen';
@@ -33,11 +34,40 @@ function App() {
     const showHUD = GAME_SCREENS.has(state.currentScreen);
     const [newPlayerError, setNewPlayerError] = useState<string>('');
 
+    // --- Stavy pro Preloader ---
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [preloadError, setPreloadError] = useState<string | null>(null);
+
     const handleAddTimeUsed = useCallback(() => {
         // Vizuální feedback je řešen v CombatScreen přes toast
     }, []);
 
-    // Když hráč dosáhne VICTORY, oznámenímu backendu
+    // --- Preload všech obrázků při startu aplikace ---
+    useEffect(() => {
+        let isMounted = true;
+
+        async function initGame() {
+            try {
+                await preloadGameImages();
+                if (isMounted) {
+                    setIsLoaded(true);
+                }
+            } catch (err) {
+                console.error('Image preloader failed:', err);
+                if (isMounted) {
+                    setPreloadError('Nepodařilo se načíst herní data. Zkuste prosím obnovit stránku.');
+                }
+            }
+        }
+
+        initGame();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    // Když hráč dosáhne VICTORY, oznámení backendu
     useEffect(() => {
         if (state.currentScreen === Screen.VICTORY && state.runId) {
             apiClient.runs.finishRun(state.runId).catch(err => {
@@ -60,6 +90,31 @@ function App() {
         }
     };
 
+    // --- Vykreslení chybové obrazovky při selhání načítání ---
+    if (preloadError) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2 text-red-500 font-bold text-center">
+                <div className="bg-white p-6 rounded-lg border-2 border-red-500 shadow-lg">
+                    <p>{preloadError}</p>
+                </div>
+            </div>
+        );
+    }
+
+    // --- Vykreslení Loading screenu (dokud isLoaded !== true) ---
+    if (!isLoaded) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2">
+                <div className="text-center font-mono">
+                    <h2 className="text-2xl font-bold mb-6 text-(--ink)">Načítání hry...</h2>
+                    {/* Jednoduchý CSS spinner ladící s tématem hry */}
+                    <div className="w-12 h-12 border-4 border-(--ink) border-t-transparent rounded-full animate-spin mx-auto"></div>
+                </div>
+            </div>
+        );
+    }
+
+    // --- Hlavní render aplikace ---
     return (
         <div className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2">
             <div
@@ -99,12 +154,10 @@ function App() {
                             onCheckName={async (name: string) => {
                                 try {
                                     await apiClient.players.getStats(name);
-
                                     setNewPlayerError('Tohle jméno už někdo má. Zkus si vymyslet jiné!');
                                     return false;
                                 } catch (err) {
                                     console.log('[Ověření jména] Očekávaná chyba - jméno je volné:', err);
-
                                     setNewPlayerError('');
                                     return true;
                                 }
@@ -149,7 +202,6 @@ function App() {
                         />
                     )}
 
-                    {/* --- UPRAVENO: Předáváme stav a ukládáme do localStorage --- */}
                     {state.currentScreen === Screen.INTRO && state.selectedTower && state.playerName && (
                         <IntroScreen
                             tower={state.selectedTower}

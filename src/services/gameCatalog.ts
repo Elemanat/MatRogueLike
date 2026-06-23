@@ -12,7 +12,6 @@ export const TOWERS: Tower[] = [
         badge_image: '/assets/badges/primal_badge.png',
         tower_image: '/assets/towers/primal_tower.png',
     },
-
     {
         id: 'fractions',
         name: 'Věž zlomků',
@@ -22,7 +21,6 @@ export const TOWERS: Tower[] = [
         badge_image: '/assets/badges/fraction_badge.png',
         tower_image: '/assets/towers/fraction_tower.png',
     },
-
     {
         id: 'decimals',
         name: 'Desetinná čísla',
@@ -32,7 +30,6 @@ export const TOWERS: Tower[] = [
         badge_image: '/assets/badges/decimal_badge.png',
         tower_image: '/assets/towers/decimal_tower.png',
     },
-
     {
         id: 'unit-conversions',
         name: 'Převody jednotek',
@@ -42,7 +39,6 @@ export const TOWERS: Tower[] = [
         badge_image: '/assets/badges/conversion_badge.png',
         tower_image: '/assets/towers/conversion_tower.png',
     },
-
     {
         id: 'angles-degrees',
         name: 'Úhly a stupně',
@@ -145,5 +141,73 @@ export const ALL_ENEMIES: EnemyTemplate[] = [
     {name: 'Královna pavouků', type: EnemyType.BOSS, icon: '/assets/enemies/kralovna_pavouku.png'},
     {name: 'Ředitel školy' , type: EnemyType.BOSS, icon: '/assets/enemies/reditel_skoly.png'},
     {name: 'Ředitel Amalgám Institucionálního Zmaru' , type: EnemyType.BOSS, icon: '/assets/enemies/reditel_amalgam.png'},
-
 ];
+
+function chunkArray<T>(array: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+        chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
+}
+
+/**
+ * Přednačte POUZE základní UI herní assety (Věže, Itemy, Pozadí).
+ * Ostatní (např. desítky nepřátel) ignorujeme, aby start hry trval jen moment.
+ */
+export async function preloadGameImages(): Promise<void> {
+    const imageUrls: Set<string> = new Set();
+
+    // 1. Zahrneme věže
+    TOWERS.forEach(tower => {
+        if (tower.badge_image) imageUrls.add(tower.badge_image);
+        if (tower.tower_image) imageUrls.add(tower.tower_image);
+    });
+
+    // 2. Zahrneme UI předměty a ikonky
+    ALL_ITEMS.forEach(item => {
+        if (item.icon) imageUrls.add(item.icon);
+    });
+
+    // NEPŘÁTELE ÚMYSLNĚ VYNECHÁVÁME! Zpomalují start na 30 vteřin.
+
+    // 3. Dynamický import (pojistka pro další statické věci mimo nepřátele)
+    try {
+        const assetModules = import.meta.glob('/public/assets/**/*.{png,jpg,svg,webp}', { eager: true });
+        Object.keys(assetModules).forEach(path => {
+            const assetPath = path.replace('/public', '');
+
+            // KLÍČOVÁ PODMÍNKA: Zabráníme Vite, aby na pozadí nacpal do preloaderu složku s nepřáteli
+            if (!assetPath.includes('/enemies/')) {
+                imageUrls.add(assetPath);
+            }
+        });
+    } catch (err) {
+        console.warn('[Image Preloader] Could not load assets dynamically:', err);
+    }
+
+    const urlsArray = Array.from(imageUrls);
+    const CONCURRENCY_LIMIT = 6;
+    const batches = chunkArray(urlsArray, CONCURRENCY_LIMIT);
+
+    console.log(`[Image Preloader] Starting optimized preload of ${urlsArray.length} UI images...`);
+
+    for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        await Promise.all(
+            batch.map(url =>
+                new Promise<void>((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve();
+                    img.onerror = () => {
+                        console.warn(`[Image Preloader] Failed to preload: ${url}`);
+                        resolve();
+                    };
+                    img.src = url;
+                })
+            )
+        );
+    }
+
+    console.log(`[Image Preloader] UI Preload completely finished.`);
+}
