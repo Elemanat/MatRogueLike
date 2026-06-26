@@ -23,20 +23,16 @@ export const WizardTutorialScreen: React.FC<Props> = ({ onFinish }) => {
     };
 
     return (
-        // Změna na h-full a zmenšení gap/paddingu pro perfektní vycentrování v herním okně bez scrollování
         <div className="flex flex-col items-center justify-center h-full px-4 py-2 md:py-4 w-full max-w-6xl mx-auto gap-4 md:gap-6 overflow-y-auto">
 
-            {/* Nadpis */}
             <div className="text-center shrink-0">
                 <h2 className="text-2xl md:text-4xl font-bold rpg-title mb-0">
                     Základní výcvik
                 </h2>
             </div>
 
-            {/* Střední rozložení */}
             <div className="flex flex-col md:flex-row items-center w-full gap-4 md:gap-8 lg:gap-12">
 
-                {/* Levý blok: Čaroděj */}
                 <div className="w-full md:w-2/5 flex justify-center shrink-0">
                     <img
                         src="/assets/wizard.png"
@@ -45,17 +41,14 @@ export const WizardTutorialScreen: React.FC<Props> = ({ onFinish }) => {
                     />
                 </div>
 
-                {/* Pravý blok: Dialog, tečky a tlačítka */}
                 <div className="w-full md:w-3/5 flex flex-col items-center gap-4">
 
-                    {/* Bublina s textem */}
                     <div className="sketch-box w-full max-w-lg px-6 py-6 flex items-center justify-center min-h-32.5 md:min-h-37.5" style={{ background: 'var(--paper)' }}>
                         <p className="text-base md:text-lg lg:text-xl font-medium text-center leading-relaxed text-(--ink)">
                             {tutorialSteps[step]}
                         </p>
                     </div>
 
-                    {/* Tečky pod dialogem */}
                     <div className="flex gap-2 w-full max-w-lg justify-center mt-1 shrink-0">
                         {tutorialSteps.map((_, i) => (
                             <span
@@ -69,7 +62,6 @@ export const WizardTutorialScreen: React.FC<Props> = ({ onFinish }) => {
                         ))}
                     </div>
 
-                    {/* Tlačítka */}
                     <div className="flex flex-col items-center gap-3 w-full max-w-lg mt-2 shrink-0">
                         <div className="flex gap-4 w-full">
                             {step > 0 && (

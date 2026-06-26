@@ -130,6 +130,7 @@ export function validateProblem(p: ApiProblemDto): string[] {
 
     const canonical = parseAnswer(p.correctAnswers[0] ?? '');
     if (canonical === null) {
+        /* empty */
     } else {
         for (const ca of p.correctAnswers) {
             if (!answersEquivalent(ca, String(canonical))) {

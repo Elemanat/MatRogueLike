@@ -9,4 +9,3 @@ export function createApiClient(): ApiClient {
 }
 
 export const apiClient = createApiClient();
-

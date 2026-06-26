@@ -43,13 +43,10 @@ function readStorageJson<T>(key: string): T | null {
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 function pick<T>(arr: T[]): T {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// VÁHOVANÉ LOSOVÁNÍ (Snížení šance na Kouřovou clonu)
 function resolveRewardItem(rewardItemId?: string): Item {
     if (rewardItemId) {
         const found = ALL_ITEMS.find(item => item.id === rewardItemId);
@@ -58,7 +55,6 @@ function resolveRewardItem(rewardItemId?: string): Item {
 
     const pool: Item[] = [];
     for (const item of ALL_ITEMS) {
-        // Kouřová clona (SKIP) se vhodí do osudí jen 1x, vše ostatní 3x
         const weight = item.id === ItemId.SKIP ? 1 : 3;
         for (let i = 0; i < weight; i++) {
             pool.push(item);
@@ -101,8 +97,6 @@ function screenForRoom(rt: RoomType): Screen {
     if (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS) return Screen.COMBAT;
     return Screen.COMBAT;
 }
-
-// ── Initial state ─────────────────────────────────────────────────────────────
 
 const initialStats: PlayerStats = {enemiesDefeated: 0, floorsCompleted: 0, correctAnswers: 0, wrongAnswers: 0};
 
@@ -153,8 +147,6 @@ function initState(): GameState {
     };
 }
 
-// ── Actions ───────────────────────────────────────────────────────────────────
-
 type Action =
     | { type: 'SET_NAME'; name: string }
     | { type: 'SELECT_TOWER'; tower: Tower }
@@ -193,8 +185,6 @@ type Action =
 type ResolvedRunAnswerResponse = Omit<RunAnswerResponse, 'nextProblem'> & {
     nextProblem?: Problem | null;
 };
-
-// ── Reducer ───────────────────────────────────────────────────────────────────
 
 function advanceRoom(state: GameState): GameState {
     const tower = state.selectedTower!;
@@ -436,8 +426,8 @@ function reducer(state: GameState, action: Action): GameState {
         case 'TO_GAMEOVER':
             return {
                 ...state,
-                playerHp: 0, // Vynulujeme životy, protože to vzdal
-                currentScreen: Screen.GAMEOVER, // Přepneme obrazovku
+                playerHp: 0,
+                currentScreen: Screen.GAMEOVER,
                 currentEnemy: null,
                 currentProblem: null
             };
@@ -482,7 +472,6 @@ function reducer(state: GameState, action: Action): GameState {
 
             switch (action.itemId) {
                 case ItemId.HEAL:
-                    // OPRAVA: Hráč nemůže použít srdce, pokud má plné životy.
                     if (state.playerHp >= state.playerMaxHp) return state;
 
                     return {
@@ -575,8 +564,6 @@ function reducer(state: GameState, action: Action): GameState {
             return state;
     }
 }
-
-// ── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useGameState() {
     const [state, dispatch] = useReducer(reducer, initialState, initState);
@@ -708,7 +695,6 @@ export function useGameState() {
                     reroll: 'true'
                 });
 
-                // Use proper environment variable for API base URL
                 const baseUrl = import.meta.env?.VITE_API_BASE_URL || '';
                 const res = await fetch(`${baseUrl}/api/problems/next?${params}`);
 
@@ -716,7 +702,6 @@ export function useGameState() {
                     throw new Error(`Server vrátil chybu: ${res.status}`);
                 }
 
-                // Bezpečnostní pojistka, pokud by server přesto vracel nečekaně HTML
                 const contentType = res.headers.get("content-type");
                 if (!contentType || !contentType.includes("application/json")) {
                     const responseText = await res.text();
@@ -733,7 +718,6 @@ export function useGameState() {
                 });
             } catch (error) {
                 console.error('Nepodařilo se vyměnit příklad:', error);
-                // Můžeš přidat např. alert nebo toast notifikaci do UI, ať o tom hráč ví
             }
         } else {
             dispatch({type: 'USE_ITEM', itemId});

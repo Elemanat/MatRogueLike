@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import type { Tower } from '../types/game';
-import { apiClient } from '../services/api';
+import React, {useState, useEffect} from 'react';
+import type {Tower} from '../types/game';
+import {apiClient} from '../services/api';
 
 interface Props {
     tower: Tower;
@@ -8,7 +8,7 @@ interface Props {
     onContinue: () => void;
 }
 
-export const IntroScreen: React.FC<Props> = ({ tower, playerName, onContinue }) => {
+export const IntroScreen: React.FC<Props> = ({tower, playerName, onContinue}) => {
     const [lineIdx, setLineIdx] = useState(0);
     const [isFirstTimePlay, setIsFirstTimePlay] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
@@ -60,7 +60,7 @@ export const IntroScreen: React.FC<Props> = ({ tower, playerName, onContinue }) 
     if (isLoading) {
         return (
             <div className="flex flex-col h-full items-center justify-center">
-                <p className="text-xl font-medium" style={{ color: 'var(--ink)' }}>
+                <p className="text-xl font-medium" style={{color: 'var(--ink)'}}>
                     Rozhlížím se po věži...
                 </p>
             </div>
@@ -68,9 +68,9 @@ export const IntroScreen: React.FC<Props> = ({ tower, playerName, onContinue }) 
     }
 
     return (
-        <div className="flex flex-col h-full px-6 py-6 md:px-12 md:py-6 gap-4 w-full items-center justify-between overflow-y-auto">
+        <div
+            className="flex flex-col h-full px-6 py-6 md:px-12 md:py-6 gap-4 w-full items-center justify-between overflow-y-auto">
 
-            {/* Nadpis věže */}
             <div className="text-center w-full shrink-0">
                 <h2 className="text-3xl md:text-4xl font-bold mb-1 rpg-title">
                     {tower.name}
@@ -80,9 +80,10 @@ export const IntroScreen: React.FC<Props> = ({ tower, playerName, onContinue }) 
                 </p>
             </div>
 
-            {/* Čaroděj a bublina */}
             <div className="flex flex-col items-center gap-4 md:gap-5 flex-1 justify-center w-full max-w-2xl">
-                <div className="sketch-box flex items-center justify-center w-40 h-40 md:w-48 md:h-48 rounded-full shadow-[0.2rem_0.2rem_0_var(--ink)] md:shadow-[0.3rem_0.3rem_0_var(--ink)] shrink-0" style={{ background: 'var(--paper-dark)' }}>
+                <div
+                    className="sketch-box flex items-center justify-center w-40 h-40 md:w-48 md:h-48 rounded-full shadow-[0.2rem_0.2rem_0_var(--ink)] md:shadow-[0.3rem_0.3rem_0_var(--ink)] shrink-0"
+                    style={{background: 'var(--paper-dark)'}}>
                     <img
                         src="/assets/body_wizard.png"
                         alt="Wizard"
@@ -90,13 +91,15 @@ export const IntroScreen: React.FC<Props> = ({ tower, playerName, onContinue }) 
                     />
                 </div>
 
-                <div className="wizard-bubble w-full px-5 py-4 md:px-6 md:py-6 flex items-center justify-center min-h-30 md:min-h-35" style={{ background: 'var(--paper)', border: '2px solid var(--ink)', borderRadius: '1rem' }}>
-                    <p className="text-lg md:text-2xl font-medium text-center leading-relaxed" style={{ color: 'var(--ink)', fontFamily: 'Caveat, cursive' }}>
+                <div
+                    className="wizard-bubble w-full px-5 py-4 md:px-6 md:py-6 flex items-center justify-center min-h-30 md:min-h-35"
+                    style={{background: 'var(--paper)', border: '2px solid var(--ink)', borderRadius: '1rem'}}>
+                    <p className="text-lg md:text-2xl font-medium text-center leading-relaxed"
+                       style={{color: 'var(--ink)', fontFamily: 'Caveat, cursive'}}>
                         {wizardLines[lineIdx]}
                     </p>
                 </div>
 
-                {/* Indikátory počtu zpráv */}
                 <div className="flex gap-2.5 mt-2 shrink-0">
                     {wizardLines.map((_, i) => (
                         <span
@@ -111,7 +114,6 @@ export const IntroScreen: React.FC<Props> = ({ tower, playerName, onContinue }) 
                 </div>
             </div>
 
-            {/* Tlačítko */}
             <button
                 className={`sketch-btn text-xl md:text-2xl py-3 w-full max-w-sm shrink-0 mt-2 transition-transform hover:-translate-y-1 flex items-center justify-center gap-3 ${lineIdx < wizardLines.length - 1 ? 'sketch-btn-secondary' : 'sketch-btn-primary'}`}
                 onClick={next}

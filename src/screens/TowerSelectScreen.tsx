@@ -48,7 +48,6 @@ export const TowerSelectScreen: React.FC<Props> = ({onSelect, onBack}) => {
                                     />
                                 )}
 
-                                {/* Fajfka výběru vpravo nahoře */}
                                 {isSelected && (
                                     <div className="absolute top-0 right-1 text-3xl text-(--gold) font-bold">✓</div>
                                 )}
@@ -61,7 +60,6 @@ export const TowerSelectScreen: React.FC<Props> = ({onSelect, onBack}) => {
                                 </div>
                             </div>
 
-                            {/* Obrázek samotné věže uprostřed karty */}
                             {tower.tower_image && (
                                 <div className="flex-1 flex items-center justify-center w-full my-4">
                                     <img

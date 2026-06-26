@@ -18,7 +18,7 @@ export interface RunsApi {
 
     answer(request: RunAnswerRequest): Promise<RunAnswerResponse>;
 
-    finishRun(runId: string): Promise<{status: string}>;
+    finishRun(runId: string): Promise<{ status: string }>;
 }
 
 export interface ProblemsApi {
@@ -27,8 +27,11 @@ export interface ProblemsApi {
 
 export interface PlayersApi {
     getStats(playerName: string): Promise<PlayerStatsResponse>;
+
     loginByCode(code: string): Promise<LoginByCodeResponse>;
+
     registerNewPlayer(request: RegisterNewPlayerRequest): Promise<RegisterNewPlayerResponse>;
+
     recoverCode(request: RecoverCodeRequest): Promise<RecoverCodeResponse>;
 }
 

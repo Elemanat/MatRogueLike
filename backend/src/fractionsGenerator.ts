@@ -32,8 +32,8 @@ export function buildFractionProblem(ctx: ProblemBuilderContext): ApiProblemDto 
         const n3 = int(rng, 1, 3);
 
         const prompt = `Vypočítej: ${n1}/${d1} + ${n2}/${d2} + ${n3}/10 = ?`;
-        const commonDen = 30; // Zjednodušení pro bosse
-        const resNum = (n1 * (commonDen/d1)) + (n2 * (commonDen/d2)) + (n3 * 3);
+        const commonDen = 30;
+        const resNum = (n1 * (commonDen / d1)) + (n2 * (commonDen / d2)) + (n3 * 3);
         const correctStr = formatFraction(resNum, commonDen);
 
         return {
@@ -113,8 +113,12 @@ export function buildFractionProblem(ctx: ProblemBuilderContext): ApiProblemDto 
         let n2 = int(rng, 1, pair.d2 - 1);
 
         if (!isAdd && (n1 / pair.d1) <= (n2 / pair.d2)) {
-            const temp = pair.d1; pair.d1 = pair.d2; pair.d2 = temp;
-            const tempN = n1; n1 = n2; n2 = tempN;
+            const temp = pair.d1;
+            pair.d1 = pair.d2;
+            pair.d2 = temp;
+            const tempN = n1;
+            n1 = n2;
+            n2 = tempN;
         }
 
         const operator = isAdd ? '+' : '-';

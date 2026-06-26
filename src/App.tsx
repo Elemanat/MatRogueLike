@@ -34,15 +34,12 @@ function App() {
     const showHUD = GAME_SCREENS.has(state.currentScreen);
     const [newPlayerError, setNewPlayerError] = useState<string>('');
 
-    // --- Stavy pro Preloader ---
     const [isLoaded, setIsLoaded] = useState(false);
     const [preloadError, setPreloadError] = useState<string | null>(null);
 
     const handleAddTimeUsed = useCallback(() => {
-        // Vizuální feedback je řešen v CombatScreen přes toast
     }, []);
 
-    // --- Preload všech obrázků při startu aplikace ---
     useEffect(() => {
         let isMounted = true;
 
@@ -67,7 +64,6 @@ function App() {
         };
     }, []);
 
-    // Když hráč dosáhne VICTORY, oznámení backendu
     useEffect(() => {
         if (state.currentScreen === Screen.VICTORY && state.runId) {
             apiClient.runs.finishRun(state.runId).catch(err => {
@@ -90,10 +86,10 @@ function App() {
         }
     };
 
-    // --- Vykreslení chybové obrazovky při selhání načítání ---
     if (preloadError) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2 text-red-500 font-bold text-center">
+            <div
+                className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2 text-red-500 font-bold text-center">
                 <div className="bg-white p-6 rounded-lg border-2 border-red-500 shadow-lg">
                     <p>{preloadError}</p>
                 </div>
@@ -101,26 +97,23 @@ function App() {
         );
     }
 
-    // --- Vykreslení Loading screenu (dokud isLoaded !== true) ---
     if (!isLoaded) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2">
                 <div className="text-center font-mono">
                     <h2 className="text-2xl font-bold mb-6 text-(--ink)">Načítání hry...</h2>
-                    {/* Jednoduchý CSS spinner ladící s tématem hry */}
-                    <div className="w-12 h-12 border-4 border-(--ink) border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <div
+                        className="w-12 h-12 border-4 border-(--ink) border-t-transparent rounded-full animate-spin mx-auto"></div>
                 </div>
             </div>
         );
     }
 
-    // --- Hlavní render aplikace ---
     return (
         <div className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2">
             <div
                 className="graph-paper w-full max-w-6xl h-[92vh] max-h-200 flex flex-col overflow-hidden relative border-2 border-(--ink) shadow-[6px_6px_0_var(--ink)] rounded-[4px_8px_6px_5px/6px_4px_8px_5px]"
             >
-                {/* HUD — pouze při herních stavech */}
                 {showHUD && state.selectedTower && (
                     <HUD
                         tower={state.selectedTower}

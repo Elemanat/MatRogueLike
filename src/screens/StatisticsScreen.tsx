@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { apiClient } from '../services/api';
-import { TOWERS } from '../services/gameCatalog';
-import type { PlayerStatsResponse } from '../services/api/contracts';
-import { BadgeDisplayDialog } from '../components/BadgeDisplayDialog';
+import React, {useEffect, useState} from 'react';
+import {apiClient} from '../services/api';
+import {TOWERS} from '../services/gameCatalog';
+import type {PlayerStatsResponse} from '../services/api/contracts';
+import {BadgeDisplayDialog} from '../components/BadgeDisplayDialog';
 
 interface Props {
     playerName: string;
@@ -24,7 +24,7 @@ interface SelectedBadge {
     count: number;
 }
 
-export const StatisticsScreen: React.FC<Props> = ({ playerName, onBack }) => {
+export const StatisticsScreen: React.FC<Props> = ({playerName, onBack}) => {
     const [stats, setStats] = useState<PlayerStatsResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -91,14 +91,26 @@ export const StatisticsScreen: React.FC<Props> = ({ playerName, onBack }) => {
             <div className="flex flex-col gap-3">
                 <h3 className="text-xl font-bold underline mb-2 text-(--ink)">Celkové skóre</h3>
                 {[
-                    { label: '/assets/icons/map_icon.png', text: 'Počet pokusů (Runs)', value: stats.overall.totalRuns },
-                    { label: '/assets/icons/pergamen_icon.png', text: 'Vyřešeno příkladů', value: stats.overall.totalAnswers },
-                    { label: '/assets/icons/fajvka_icon.png', text: 'Správné odpovědi', value: stats.overall.correctAnswers },
-                    { label: '/assets/icons/target_icon.png', text: 'Celková úspěšnost', value: `${stats.overall.accuracyPercentage} %` },
+                    {label: '/assets/icons/map_icon.png', text: 'Počet pokusů (Runs)', value: stats.overall.totalRuns},
+                    {
+                        label: '/assets/icons/pergamen_icon.png',
+                        text: 'Vyřešeno příkladů',
+                        value: stats.overall.totalAnswers
+                    },
+                    {
+                        label: '/assets/icons/fajvka_icon.png',
+                        text: 'Správné odpovědi',
+                        value: stats.overall.correctAnswers
+                    },
+                    {
+                        label: '/assets/icons/target_icon.png',
+                        text: 'Celková úspěšnost',
+                        value: `${stats.overall.accuracyPercentage} %`
+                    },
                 ].map(row => (
                     <div key={row.text} className="sketch-box-light px-4 py-2 flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                            <img src={row.label} alt="Ikona" className="h-6 w-6 object-contain" />
+                            <img src={row.label} alt="Ikona" className="h-6 w-6 object-contain"/>
                             <span className="text-lg text-(--ink)">{row.text}</span>
                         </div>
                         <span className="text-2xl font-bold text-(--ink)">{row.value}</span>
@@ -115,14 +127,16 @@ export const StatisticsScreen: React.FC<Props> = ({ playerName, onBack }) => {
                         const hasBadge = badgeCount > 0;
 
                         return (
-                            <div key={topic} className="sketch-box-light px-4 py-2 flex justify-between items-center gap-3">
+                            <div key={topic}
+                                 className="sketch-box-light px-4 py-2 flex justify-between items-center gap-3">
                                 <div className="flex-1">
                                     <span className="text-lg text-(--ink)">{getTowerName(topic)}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span
                                         className={`text-xl font-bold ${acc >= 80 ? 'text-(--green)' : acc < 50 ? 'text-(--red)' : 'text-orange-500'}`}>
-                                        {acc} % <span className="text-sm font-normal text-(--ink-light)">({data.correct}/{data.total})</span>
+                                        {acc} % <span
+                                        className="text-sm font-normal text-(--ink-light)">({data.correct}/{data.total})</span>
                                     </span>
 
                                     <button
@@ -157,7 +171,7 @@ export const StatisticsScreen: React.FC<Props> = ({ playerName, onBack }) => {
 
             {totalBadges > 0 && (
                 <div className="sketch-box-light px-4 py-3 mt-4 flex items-center justify-center gap-2 bg-yellow-50">
-                    <img src="/assets/icons/closet_icon.png" alt="Odznaky" className="h-8 w-8 object-contain" />
+                    <img src="/assets/icons/closet_icon.png" alt="Odznaky" className="h-8 w-8 object-contain"/>
                     <span className="text-lg font-bold text-(--ink)">Celkem odznaků:</span>
                     <span className="text-2xl font-bold text-(--ink)">{totalBadges}</span>
                 </div>

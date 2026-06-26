@@ -19,7 +19,8 @@ export const ChestScreen: React.FC<Props> = ({onPick}) => {
     const [offered] = useState<[Item, Item]>(pickTwoItems);
 
     return (
-        <div className="flex flex-col h-full px-6 py-4 md:px-10 md:py-6 gap-4 w-full items-center justify-center overflow-y-auto">
+        <div
+            className="flex flex-col h-full px-6 py-4 md:px-10 md:py-6 gap-4 w-full items-center justify-center overflow-y-auto">
 
             <img
                 src="/assets/chest.png"
@@ -32,12 +33,13 @@ export const ChestScreen: React.FC<Props> = ({onPick}) => {
                     Tajemná truhla!
                 </h2>
                 <p className="text-lg italic" style={{color: 'var(--ink-light)'}}>
-                    Zapraskalo staré dřevo a uvnitř se něco zalesklo...<br className="hidden md:block" />
+                    Zapraskalo staré dřevo a uvnitř se něco zalesklo...<br className="hidden md:block"/>
                     Vyber si jeden předmět na svou další cestu:
                 </p>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 w-full max-w-200 mt-4 mb-2 flex-1 items-stretch justify-center">
+            <div
+                className="flex flex-col md:flex-row gap-4 w-full max-w-200 mt-4 mb-2 flex-1 items-stretch justify-center">
                 {offered.map((item, index) => (
                     <button
                         key={item.id}

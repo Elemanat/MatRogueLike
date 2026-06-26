@@ -127,7 +127,7 @@ export const ALL_ENEMIES: EnemyTemplate[] = [
     {name: 'Průzračný přízrak', type: EnemyType.MINIBOSS, icon: '/assets/enemies/pruzracny_prizrak.png'},
     {name: 'Zástupce ředitele', type: EnemyType.MINIBOSS, icon: '/assets/enemies/zastupce_reditele.png'},
     {name: 'Drsný školník', type: EnemyType.MINIBOSS, icon: '/assets/enemies/drsny_skolnik.png'},
-    {name: 'Skřetí arcišaman' , type: EnemyType.MINIBOSS, icon: '/assets/enemies/skreti_arcisaman.png'},
+    {name: 'Skřetí arcišaman', type: EnemyType.MINIBOSS, icon: '/assets/enemies/skreti_arcisaman.png'},
 
     // --- BOSS ---
     {name: 'Válečný slon', type: EnemyType.BOSS, icon: '/assets/enemies/valecny_slon.png'},
@@ -139,8 +139,12 @@ export const ALL_ENEMIES: EnemyTemplate[] = [
     {name: 'Pouštní červ', type: EnemyType.BOSS, icon: '/assets/enemies/poustni_cerv.png'},
     {name: 'Pán bouří', type: EnemyType.BOSS, icon: '/assets/enemies/pan_bouri.png'},
     {name: 'Královna pavouků', type: EnemyType.BOSS, icon: '/assets/enemies/kralovna_pavouku.png'},
-    {name: 'Ředitel školy' , type: EnemyType.BOSS, icon: '/assets/enemies/reditel_skoly.png'},
-    {name: 'Ředitel Amalgám Institucionálního Zmaru' , type: EnemyType.BOSS, icon: '/assets/enemies/reditel_amalgam.png'},
+    {name: 'Ředitel školy', type: EnemyType.BOSS, icon: '/assets/enemies/reditel_skoly.png'},
+    {
+        name: 'Ředitel Amalgám Institucionálního Zmaru',
+        type: EnemyType.BOSS,
+        icon: '/assets/enemies/reditel_amalgam.png'
+    },
 ];
 
 function chunkArray<T>(array: T[], size: number): T[][] {
@@ -158,26 +162,20 @@ function chunkArray<T>(array: T[], size: number): T[][] {
 export async function preloadGameImages(): Promise<void> {
     const imageUrls: Set<string> = new Set();
 
-    // 1. Zahrneme věže
     TOWERS.forEach(tower => {
         if (tower.badge_image) imageUrls.add(tower.badge_image);
         if (tower.tower_image) imageUrls.add(tower.tower_image);
     });
 
-    // 2. Zahrneme UI předměty a ikonky
     ALL_ITEMS.forEach(item => {
         if (item.icon) imageUrls.add(item.icon);
     });
 
-    // NEPŘÁTELE ÚMYSLNĚ VYNECHÁVÁME! Zpomalují start na 30 vteřin.
-
-    // 3. Dynamický import (pojistka pro další statické věci mimo nepřátele)
     try {
-        const assetModules = import.meta.glob('/public/assets/**/*.{png,jpg,svg,webp}', { eager: true });
+        const assetModules = import.meta.glob('/public/assets/**/*.{png,jpg,svg,webp}', {eager: true});
         Object.keys(assetModules).forEach(path => {
             const assetPath = path.replace('/public', '');
 
-            // KLÍČOVÁ PODMÍNKA: Zabráníme Vite, aby na pozadí nacpal do preloaderu složku s nepřáteli
             if (!assetPath.includes('/enemies/')) {
                 imageUrls.add(assetPath);
             }

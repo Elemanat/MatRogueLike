@@ -20,7 +20,6 @@ export const HUD: React.FC<Props> = ({tower, floor, room, playerHp, playerMaxHp,
             background: 'var(--paper-dark)',
         }}
     >
-        {/* Vlevo: název věže + patro/místnost */}
         <div className="flex flex-col min-w-0 flex-1 justify-center" style={{color: 'var(--ink)', lineHeight: 1.2}}>
             <div className="font-bold truncate text-[0.85rem] md:text-xl">
                 {tower.name}
@@ -30,12 +29,10 @@ export const HUD: React.FC<Props> = ({tower, floor, room, playerHp, playerMaxHp,
             </div>
         </div>
 
-        {/* Střed: minimapa */}
         <div className="shrink-0 flex justify-center md:scale-125 origin-center mx-2 md:mx-4">
             <MiniMap tower={tower} floor={floor} room={room}/>
         </div>
 
-        {/* Uprostřed: tlačítko Vzdát */}
         <div className="flex-1 flex justify-center items-center">
             <button
                 onClick={onSurrender}
@@ -51,7 +48,6 @@ export const HUD: React.FC<Props> = ({tower, floor, room, playerHp, playerMaxHp,
             </button>
         </div>
 
-        {/* Vpravo: HP */}
         <div className="shrink-0 flex items-center">
             <div className="md:scale-[1.4] origin-right">
                 <HealthBar health={playerHp} maxHealth={playerMaxHp}/>

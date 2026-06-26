@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import type {GameSettings} from '../types/game';
-import { WizardTutorialScreen } from './WizardTutorialScreen';
+import {WizardTutorialScreen} from './WizardTutorialScreen';
 
 interface Props {
     settings: GameSettings;
@@ -16,10 +16,8 @@ export const SettingsScreen: React.FC<Props> = ({
     const [showContact, setShowContact] = useState(false);
     const [showSurvey, setShowSurvey] = useState(false);
 
-    // Nový lokální stav pro tutoriál
     const [showTutorial, setShowTutorial] = useState(false);
 
-    // Pokud je aktivní tutoriál, rovnou vrátíme jeho obrazovku (stejně jako v NewPlayerScreen)
     if (showTutorial) {
         return (
             <WizardTutorialScreen
@@ -33,7 +31,6 @@ export const SettingsScreen: React.FC<Props> = ({
             <h2 className="text-3xl font-bold text-center text-(--ink)">Nastavení</h2>
 
             <div className="flex flex-col gap-4 flex-1">
-                {/* Čas */}
                 <div className="sketch-box-light px-4 py-3 flex justify-between items-center">
                     <span className="text-xl md:text-2xl flex items-center gap-3">
                         <img
@@ -54,7 +51,6 @@ export const SettingsScreen: React.FC<Props> = ({
                     </select>
                 </div>
 
-                {/* Kontakt */}
                 <div className="sketch-box-light px-4 py-3 flex justify-between items-center gap-2">
                     <span className="text-xl md:text-2xl flex items-center gap-3">
                         <img
@@ -80,7 +76,6 @@ export const SettingsScreen: React.FC<Props> = ({
                     </div>
                 </div>
 
-                {/* Zopakovat tutoriál */}
                 <div className="sketch-box-light px-4 py-3 flex justify-between items-center gap-2">
                     <span className="text-xl md:text-2xl flex items-center gap-3">
                         <img
@@ -111,13 +106,13 @@ export const SettingsScreen: React.FC<Props> = ({
                 Zpět do menu
             </button>
 
-            {/* Kontaktní Dialog */}
             {showContact && (
                 <div style={{
                     position: 'fixed', inset: 0, background: 'rgba(44,44,62,0.85)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
                 }}>
-                    <div className="sketch-box px-8 py-8 md:px-10 md:py-10 flex flex-col items-center gap-6 mx-4 w-[90%] max-w-100 md:max-w-125">
+                    <div
+                        className="sketch-box px-8 py-8 md:px-10 md:py-10 flex flex-col items-center gap-6 mx-4 w-[90%] max-w-100 md:max-w-125">
                         <p className="text-5xl md:text-6xl">
                             <img
                                 src="/assets/icons/letter_icon.png"
@@ -128,10 +123,12 @@ export const SettingsScreen: React.FC<Props> = ({
                         <h3 className="text-3xl md:text-4xl font-bold text-center text-(--ink)">Napiš mi!</h3>
 
                         <p className="text-base md:text-xl text-center text-(--ink-light)">
-                            Pokud máš nějaký nápad na vylepšení, našel jsi chybu nebo mi chceš jen něco vzkázat, ozvi se mi na e-mail:
+                            Pokud máš nějaký nápad na vylepšení, našel jsi chybu nebo mi chceš jen něco vzkázat, ozvi se
+                            mi na e-mail:
                         </p>
 
-                        <div className="w-full text-center py-4 bg-[#fffbe6] border-2 border-(--ink-light) border-dashed rounded-[4px_8px_6px_5px/6px_4px_8px_5px]">
+                        <div
+                            className="w-full text-center py-4 bg-[#fffbe6] border-2 border-(--ink-light) border-dashed rounded-[4px_8px_6px_5px/6px_4px_8px_5px]">
                             <p className="text-xl md:text-2xl font-bold text-(--ink) select-all">
                                 konirp@students.zcu.cz
                             </p>
@@ -152,13 +149,13 @@ export const SettingsScreen: React.FC<Props> = ({
                 </div>
             )}
 
-            {/* Dotazník Dialog */}
             {showSurvey && (
                 <div style={{
                     position: 'fixed', inset: 0, background: 'rgba(44,44,62,0.85)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
                 }}>
-                    <div className="sketch-box px-8 py-8 md:px-10 md:py-10 flex flex-col items-center gap-6 mx-4 w-[90%] max-w-100 md:max-w-125">
+                    <div
+                        className="sketch-box px-8 py-8 md:px-10 md:py-10 flex flex-col items-center gap-6 mx-4 w-[90%] max-w-100 md:max-w-125">
                         <p className="text-5xl md:text-6xl">
                             <img
                                 src="/assets/icons/clipboard_icon.png"
@@ -169,7 +166,8 @@ export const SettingsScreen: React.FC<Props> = ({
                         <h3 className="text-3xl md:text-4xl font-bold text-center text-(--ink)">Dotazník</h3>
 
                         <p className="text-base md:text-xl text-center text-(--ink-light)">
-                            Tvůj názor je pro nás velmi důležitý! Pomož nám vylepšit hru tím, že vyplníš náš krátký dotazník.
+                            Tvůj názor je pro nás velmi důležitý! Pomož nám vylepšit hru tím, že vyplníš náš krátký
+                            dotazník.
                         </p>
 
                         <button

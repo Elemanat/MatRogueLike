@@ -4,7 +4,7 @@ interface Props {
     text: string;
 }
 
-export const TextWithFractions: React.FC<Props> = ({ text }) => {
+export const TextWithFractions: React.FC<Props> = ({text}) => {
     const parts = text.split(/(-?\d+\/-?\d+)/g);
 
     return (
@@ -13,8 +13,15 @@ export const TextWithFractions: React.FC<Props> = ({ text }) => {
                 if (part.match(/^-?\d+\/-?\d+$/)) {
                     const [num, den] = part.split('/');
                     return (
-                        <span key={index} style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', verticalAlign: 'middle', margin: '0 4px', lineHeight: '1.2' }}>
-                            <span style={{ borderBottom: '2px solid currentColor', padding: '0 2px' }}>{num}</span>
+                        <span key={index} style={{
+                            display: 'inline-flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            verticalAlign: 'middle',
+                            margin: '0 4px',
+                            lineHeight: '1.2'
+                        }}>
+                            <span style={{borderBottom: '2px solid currentColor', padding: '0 2px'}}>{num}</span>
                             <span>{den}</span>
                         </span>
                     );

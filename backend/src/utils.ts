@@ -1,7 +1,3 @@
-// ==========================================
-// RANDOMIZACE A HASH
-// ==========================================
-
 export function stringToSeed(value: string): number {
     let hash = 2166136261;
     for (let i = 0; i < value.length; i += 1) {
@@ -46,10 +42,6 @@ export function uniqueIntegers(rng: () => number, values: readonly number[], cou
 
     return [...picked];
 }
-
-// ==========================================
-// MATEMATIKA A PARSOVÁNÍ
-// ==========================================
 
 export function normalizeKey(value: string): string {
     return value
@@ -97,7 +89,6 @@ export function parseAnswer(value: string): number | null {
     const normalized = value.trim().replace(',', '.');
     if (!normalized) return null;
 
-    // Podpora smíšených čísel (např. "1 1/2" nebo "-2 3/4")
     const mixedMatch = normalized.match(/^(-?\d+)\s+(\d+)\s*\/\s*(\d+)$/);
     if (mixedMatch) {
         const whole = Number(mixedMatch[1]);

@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import { WizardTutorialScreen } from './WizardTutorialScreen';
+import {WizardTutorialScreen} from './WizardTutorialScreen';
 
 const ANIMALS = [
     {emoji: '🐶', label: 'Pes', icon: '/assets/icons/dog_icon_no_bg.png'},
@@ -11,7 +11,6 @@ const ANIMALS = [
 
 interface Props {
     onSubmit: (name: string, secretAnimal: string) => void;
-    // Přidána funkce pro ověření před spuštěním tutoriálu
     onCheckName: (name: string) => Promise<boolean>;
     onBack: () => void;
     isLoading?: boolean;
@@ -23,13 +22,10 @@ export const NewPlayerScreen: React.FC<Props> = ({onSubmit, onCheckName, onBack,
     const [selectedAnimal, setSelectedAnimal] = useState<string>('🐶');
     const [showTutorial, setShowTutorial] = useState(false);
 
-    // Přepnuto na asynchronní volání
     const handleInitialSubmit = async () => {
         if (name.trim()) {
-            // Zavoláme parent komponentu, ať jméno zkontroluje
             const isNameAvailable = await onCheckName(name.trim());
 
-            // Tutoriál se ukáže jen tehdy, když backend potvrdí, že jméno je volné
             if (isNameAvailable) {
                 setShowTutorial(true);
             }

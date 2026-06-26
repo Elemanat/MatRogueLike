@@ -24,8 +24,8 @@ export const ExistingPlayerLoginScreen: React.FC<Props> = ({onSubmit, onBack, on
                 alt="VěžMat"
                 className="w-3/4 md:w-1/2 h-auto object-contain drop-shadow-lg"
             />            <p className="text-lg text-center" style={{color: 'var(--ink-light)'}}>
-                Zadej svůj kód pro přihlášení
-            </p>
+            Zadej svůj kód pro přihlášení
+        </p>
 
             <div className="w-full flex flex-col gap-3">
                 <input
