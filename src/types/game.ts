@@ -48,6 +48,7 @@ export interface Enemy {
     type: EnemyType;
     maxHp: number;
     hp: number;
+    icon: string;
 }
 
 export interface Item {
@@ -72,6 +73,8 @@ export interface Tower {
     topic: string;
     floors: number;
     roomsPerFloor: number;
+    badge_image: string;
+    tower_image: string;
 }
 
 export interface PlayerStats {
@@ -83,8 +86,6 @@ export interface PlayerStats {
 
 export interface GameSettings {
     roundTimeSeconds: number;
-    soundEnabled: boolean;
-    reducedMotion: boolean;
 }
 
 export interface GameState {

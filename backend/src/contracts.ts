@@ -17,9 +17,9 @@ export interface RunStartResponse {
     playerId: string;
     playerCode: string;
     startedAt: string;
-    seed?: string;     // Přidáno
-    hp?: number;       // Přidáno
-    maxHp?: number;    // Přidáno
+    seed?: string;
+    hp?: number;
+    maxHp?: number;
     initialProblem?: ApiProblemDto;
 }
 

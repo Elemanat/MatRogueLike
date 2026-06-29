@@ -9,7 +9,6 @@ dotenv.config();
 
 const app = express();
 
-// Debug info
 console.log(`[Backend] Node environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`[Backend] Database URL: ${process.env.DATABASE_URL}`);
 console.log(`[Backend] Port: ${process.env.PORT || 3001}`);
@@ -30,8 +29,6 @@ function generatePlayerCode(): string {
 app.use(cors());
 app.use(express.json());
 
-// ── Health checks ──────────────────────────────────────────────────────────
-
 app.get('/api/health', (_req, res) => {
     res.json({status: 'ok'});
 });
@@ -45,8 +42,6 @@ app.get('/api/ready', async (_req, res) => {
         res.status(503).json({status: 'not ready', error: 'Database connection failed'});
     }
 });
-
-// ── API Routes ─────────────────────────────────────────────────────────────
 
 app.post('/api/players/register', async (req, res) => {
     try {
@@ -89,7 +84,13 @@ app.post('/api/runs/start', async (req, res) => {
 
         let player = await prisma.player.findUnique({where: {name: playerName}});
         if (!player) {
-            player = await prisma.player.create({data: {name: playerName, code: generatePlayerCode(), secretAnimal: '🐶'}});
+            player = await prisma.player.create({
+                data: {
+                    name: playerName,
+                    code: generatePlayerCode(),
+                    secretAnimal: '🐶'
+                }
+            });
         }
 
         const seed = `${playerName}-${Date.now()}`;
@@ -184,7 +185,6 @@ app.post('/api/runs/answer', async (req, res) => {
             }
         });
 
-        // Frontend is source of truth for HP (it knows about heals, items, etc.)
         let newHp = playerHp !== undefined ? playerHp : run.hp;
         let newScore = run.score;
         let state: RunAnswerState = 'CONTINUE';
@@ -265,7 +265,6 @@ app.post('/api/players/login-by-code', async (req, res) => {
     }
 });
 
-// ZDE JE TVOJE ZVÍŘÁTKO PRO OBNOVU KÓDU!
 app.post('/api/players/recover', async (req, res) => {
     try {
         const {playerName, secretAnimal} = req.body;
@@ -448,7 +447,6 @@ const server = app.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`========================================\n`);
 });
 
-// Graceful shutdown
 async function gracefulShutdown(signal: string) {
     console.log(`\n[Backend] Received ${signal}, shutting down gracefully...`);
 

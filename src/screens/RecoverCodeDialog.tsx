@@ -1,11 +1,11 @@
 import React, {useState} from 'react';
 
 const ANIMALS = [
-    {emoji: '🐶', label: 'Pes'},
-    {emoji: '🐱', label: 'Kočka'},
-    {emoji: '🐸', label: 'Žába'},
-    {emoji: '🦊', label: 'Liska'},
-    {emoji: '🐼', label: 'Panda'},
+    {emoji: '🐶', label: 'Pes', icon: '/assets/icons/dog_icon_no_bg.png'},
+    {emoji: '🐱', label: 'Kočka', icon: '/assets/icons/cat_icon_no_bg.png'},
+    {emoji: '🐸', label: 'Žába', icon: '/assets/icons/frog_icon_no_bg.png'},
+    {emoji: '🦊', label: 'Liška', icon: '/assets/icons/fox_icon_no_bg.png'},
+    {emoji: '🐼', label: 'Panda', icon: '/assets/icons/panda_icon_no_bg.png'},
 ] as const;
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
     onRecover: (playerName: string, secretAnimal: string) => Promise<string>;
 }
 
-export const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
+const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
     const [playerName, setPlayerName] = useState('');
     const [selectedAnimal, setSelectedAnimal] = useState<string>('🐶');
     const [isLoading, setIsLoading] = useState(false);
@@ -87,24 +87,33 @@ export const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
                                 <label className="text-sm block mb-2" style={{color: 'var(--ink-light)'}}>
                                     Tvoje tajné zvířátko:
                                 </label>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 flex-wrap justify-center">
                                     {ANIMALS.map(animal => (
                                         <button
                                             key={animal.emoji}
-                                            className="text-2xl px-3 py-2 rounded-lg transition-all flex-1"
+                                            className="sketch-box w-20 h-20 p-1 rounded-lg transition-all flex items-center justify-center"
                                             style={{
-                                                background: selectedAnimal === animal.emoji ? 'var(--primary)' : 'var(--paper)',
+                                                background: selectedAnimal === animal.emoji ? 'var(--paper-dark)' : 'var(--paper)',
                                                 border: selectedAnimal === animal.emoji
                                                     ? '3px solid var(--ink)'
                                                     : '2px solid var(--ink-light)',
                                                 opacity: isLoading ? 0.5 : 1,
                                                 cursor: isLoading ? 'not-allowed' : 'pointer',
+                                                boxShadow: selectedAnimal === animal.emoji
+                                                    ? '0 0 10px rgba(44,44,62,0.3)'
+                                                    : '0.2rem 0.2rem 0 var(--ink)',
                                             }}
                                             onClick={() => setSelectedAnimal(animal.emoji)}
                                             disabled={isLoading}
                                             title={animal.label}
                                         >
-                                            {animal.emoji}
+                                            <img
+                                                src={animal.icon}
+                                                alt={animal.label}
+                                                className={`w-full h-full scale-150 ${
+                                                    animal.emoji === '🐼' ? 'icon-no-bg object-contain' : 'object-cover'
+                                                }`}
+                                            />
                                         </button>
                                     ))}
                                 </div>
@@ -112,7 +121,14 @@ export const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
 
                             {error && (
                                 <p className="text-sm text-center font-semibold" style={{color: 'var(--danger)'}}>
-                                    ❌ {error}
+                                    <div className="flex items-center gap-2">
+                                        <img
+                                            src={'/assets/icons/cross_icon.png'}
+                                            alt={'Špatná odpověď'}
+                                            className="h-8 w-8 object-contain"
+                                        />
+                                        <span>{error}</span>
+                                    </div>
                                 </p>
                             )}
 
@@ -136,21 +152,40 @@ export const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
                     </>
                 ) : (
                     <>
-                        <h2 className="text-2xl font-bold mb-6 text-center">
-                            ✅ Tvůj kód!
+                        <h2 className="flex justify-center items-center gap-3 text-2xl font-bold mb-6">
+                            <img
+                                src={'/assets/icons/fajvka_icon.png'}
+                                alt={'Kód obnoven'}
+                                className="h-8 w-8 object-contain"
+                            />
+                            Tvůj kód!
                         </h2>
 
                         <div className="text-center mb-8">
-                            <p className="text-5xl font-bold font-mono tracking-widest" style={{color: 'var(--primary)'}}>
+                            <p className="text-5xl font-bold font-mono tracking-widest"
+                               style={{color: 'var(--primary)'}}>
                                 {recoveredCode}
                             </p>
                         </div>
 
                         <button
-                            className="sketch-btn sketch-btn-primary w-full text-lg py-3"
+                            className="w-full sketch-btn sketch-btn-primary text-xl py-2 flex items-center justify-center gap-3"
                             onClick={handleCopyAndClose}
                         >
-                            ✓ Zkopírovat a zavřít
+                            <img
+                                src="/assets/icons/clipboard_icon.png"
+                                alt="Clipboard icon"
+                                className="h-7 w-7 object-contain"
+                            />
+
+                            Zkopírovat a vstoupit
+
+                            <img
+                                src="/assets/icons/gate_icon.png"
+                                alt="Vstup"
+                                className="h-8 w-8 object-contain"
+                            />
+
                         </button>
                     </>
                 )}
@@ -158,3 +193,4 @@ export const RecoverCodeDialog: React.FC<Props> = ({onClose, onRecover}) => {
         </div>
     );
 };
+export default RecoverCodeDialog

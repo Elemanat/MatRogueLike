@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: petrkonir/matrogulike-frontend:v9
+          image: petrkonir/matrogulike-frontend:v15
           ports:
             - containerPort: 80
 ---

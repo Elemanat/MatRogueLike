@@ -8,7 +8,6 @@ spec:
     - host: matrogulike.kvd.zcu.cz
       http:
         paths:
-          # Vše začínající na /api pošli do backendu (Ingress cestu NEZKRÁTÍ)
           - path: /api
             pathType: Prefix
             backend:
@@ -16,7 +15,6 @@ spec:
                 name: matrogulike-backend-service
                 port:
                   number: 3001
-          # Vše ostatní pošli do frontendu
           - path: /
             pathType: Prefix
             backend:

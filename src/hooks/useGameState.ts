@@ -2,13 +2,10 @@ import {useEffect, useReducer} from 'react';
 import {Screen, RoomType, EnemyType, ItemId} from '../types/game';
 import type {GameState, Item, Tower, Enemy, Problem, PlayerStats, GameSettings} from '../types/game';
 import {ALL_ITEMS} from '../services/gameCatalog';
+import {ALL_ENEMIES} from '../services/gameCatalog';
 import {apiClient} from '../services/api';
 import {mapProblemDtoToProblem} from '../services/api/mappers';
 import type {RunAnswerResponse} from '../services/api/contracts';
-
-const ENEMIES_NORMAL = ['Zlý zlomek', 'Záludná rovnice', 'Číselný duch', 'Rozbitá desetina'];
-const ENEMIES_MINIBOSS = ['Miniboss: Velký jmenovatel', 'Miniboss: Mocný součin'];
-const ENEMIES_BOSS = ['BOSS: Arcivládce Čísel', 'BOSS: Nekonečný Zlomek'];
 
 const STORAGE_KEY_SESSION_STATS = 'vezmat.sessionStats.v1';
 const STORAGE_KEY_SETTINGS = 'vezmat.settings.v1';
@@ -16,10 +13,8 @@ const STORAGE_KEY_LAST_PLAYER = 'vezmat.lastPlayer.v1';
 const STORAGE_KEY_PLAYER_ID = 'vezmat.playerId.v1';
 const STORAGE_KEY_PLAYER_CODE = 'vezmat.playerCode.v1';
 
-const defaultSettings: GameSettings = {
-    roundTimeSeconds: 20,
-    soundEnabled: true,
-    reducedMotion: false,
+const defaultSettings: { roundTimeSeconds: number } = {
+    roundTimeSeconds: 30
 };
 
 function isPlayerStats(value: unknown): value is PlayerStats {
@@ -48,13 +43,10 @@ function readStorageJson<T>(key: string): T | null {
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 function pick<T>(arr: T[]): T {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// VÁHOVANÉ LOSOVÁNÍ (Snížení šance na Kouřovou clonu)
 function resolveRewardItem(rewardItemId?: string): Item {
     if (rewardItemId) {
         const found = ALL_ITEMS.find(item => item.id === rewardItemId);
@@ -63,7 +55,6 @@ function resolveRewardItem(rewardItemId?: string): Item {
 
     const pool: Item[] = [];
     for (const item of ALL_ITEMS) {
-        // Kouřová clona (SKIP) se vhodí do osudí jen 1x, vše ostatní 3x
         const weight = item.id === ItemId.SKIP ? 1 : 3;
         for (let i = 0; i < weight; i++) {
             pool.push(item);
@@ -73,9 +64,19 @@ function resolveRewardItem(rewardItemId?: string): Item {
 }
 
 function makeEnemy(type: EnemyType): Enemy {
-    if (type === EnemyType.BOSS) return {name: pick(ENEMIES_BOSS), type, maxHp: 5, hp: 5};
-    if (type === EnemyType.MINIBOSS) return {name: pick(ENEMIES_MINIBOSS), type, maxHp: 3, hp: 3};
-    return {name: pick(ENEMIES_NORMAL), type, maxHp: 1, hp: 1};
+    const availableEnemies = ALL_ENEMIES.filter(e => e.type === type);
+
+    const template = pick(availableEnemies);
+
+    const hp = type === EnemyType.BOSS ? 5 : type === EnemyType.MINIBOSS ? 3 : 1;
+
+    return {
+        name: template.name,
+        type: template.type,
+        maxHp: hp,
+        hp: hp,
+        icon: template.icon
+    };
 }
 
 function generateRoomType(room: number, roomsPerFloor: number, floor: number, floors: number): RoomType {
@@ -96,8 +97,6 @@ function screenForRoom(rt: RoomType): Screen {
     if (rt === RoomType.COMBAT || rt === RoomType.MINIBOSS || rt === RoomType.BOSS) return Screen.COMBAT;
     return Screen.COMBAT;
 }
-
-// ── Initial state ─────────────────────────────────────────────────────────────
 
 const initialStats: PlayerStats = {enemiesDefeated: 0, floorsCompleted: 0, correctAnswers: 0, wrongAnswers: 0};
 
@@ -148,8 +147,6 @@ function initState(): GameState {
     };
 }
 
-// ── Actions ───────────────────────────────────────────────────────────────────
-
 type Action =
     | { type: 'SET_NAME'; name: string }
     | { type: 'SELECT_TOWER'; tower: Tower }
@@ -182,13 +179,12 @@ type Action =
     | { type: 'RESET_SESSION_STATS' }
     | { type: 'CLOSE_WRONG_ANSWER_DIALOG' }
     | { type: 'CAMP_REST' }
-    | { type: 'CAMP_SCAVENGE' };
+    | { type: 'CAMP_SCAVENGE' }
+    | { type: 'TO_GAMEOVER' };
 
 type ResolvedRunAnswerResponse = Omit<RunAnswerResponse, 'nextProblem'> & {
     nextProblem?: Problem | null;
 };
-
-// ── Reducer ───────────────────────────────────────────────────────────────────
 
 function advanceRoom(state: GameState): GameState {
     const tower = state.selectedTower!;
@@ -426,6 +422,16 @@ function reducer(state: GameState, action: Action): GameState {
 
         case 'CLOSE_WRONG_ANSWER_DIALOG':
             return {...state, wrongAnswerDialog: null};
+
+        case 'TO_GAMEOVER':
+            return {
+                ...state,
+                playerHp: 0,
+                currentScreen: Screen.GAMEOVER,
+                currentEnemy: null,
+                currentProblem: null
+            };
+
         case 'CAMP_REST':
             return advanceRoom({...state, playerHp: Math.min(state.playerMaxHp, state.playerHp + 1)});
 
@@ -466,7 +472,6 @@ function reducer(state: GameState, action: Action): GameState {
 
             switch (action.itemId) {
                 case ItemId.HEAL:
-                    // OPRAVA: Hráč nemůže použít srdce, pokud má plné životy.
                     if (state.playerHp >= state.playerMaxHp) return state;
 
                     return {
@@ -559,8 +564,6 @@ function reducer(state: GameState, action: Action): GameState {
             return state;
     }
 }
-
-// ── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useGameState() {
     const [state, dispatch] = useReducer(reducer, initialState, initState);
@@ -692,7 +695,6 @@ export function useGameState() {
                     reroll: 'true'
                 });
 
-                // Use proper environment variable for API base URL
                 const baseUrl = import.meta.env?.VITE_API_BASE_URL || '';
                 const res = await fetch(`${baseUrl}/api/problems/next?${params}`);
 
@@ -700,7 +702,6 @@ export function useGameState() {
                     throw new Error(`Server vrátil chybu: ${res.status}`);
                 }
 
-                // Bezpečnostní pojistka, pokud by server přesto vracel nečekaně HTML
                 const contentType = res.headers.get("content-type");
                 if (!contentType || !contentType.includes("application/json")) {
                     const responseText = await res.text();
@@ -717,7 +718,6 @@ export function useGameState() {
                 });
             } catch (error) {
                 console.error('Nepodařilo se vyměnit příklad:', error);
-                // Můžeš přidat např. alert nebo toast notifikaci do UI, ať o tom hráč ví
             }
         } else {
             dispatch({type: 'USE_ITEM', itemId});
@@ -732,7 +732,8 @@ export function useGameState() {
             if (state.playerId) window.localStorage.setItem(STORAGE_KEY_PLAYER_ID, state.playerId);
             if (state.playerCode) window.localStorage.setItem(STORAGE_KEY_PLAYER_CODE, state.playerCode);
         } catch {
-            /* empty */ }
+            /* empty */
+        }
     }, [state.sessionStats, state.settings, state.playerName, state.playerId, state.playerCode]);
 
     return {state, dispatch, actions: {startRun, answer, createNewPlayer, loginByCode, useItem, recoverCode}};

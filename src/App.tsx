@@ -2,6 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {useGameState} from './hooks/useGameState';
 import {Screen, ItemId} from './types/game';
 import {apiClient} from './services/api';
+import {preloadGameImages} from './services/gameCatalog';
 import {HUD} from './components/HUD';
 import {CombatScreen} from './components/CombatScreen';
 import {EmptyRoomScreen} from './components/EmptyRoomScreen';
@@ -10,7 +11,7 @@ import {WrongAnswerDialog} from './components/WrongAnswerDialog';
 import {LoginScreen} from './screens/LoginScreen';
 import {NewPlayerScreen} from './screens/NewPlayerScreen';
 import {ExistingPlayerLoginScreen} from './screens/ExistingPlayerLoginScreen';
-import {RecoverCodeDialog} from './screens/RecoverCodeDialog';
+import RecoverCodeDialog from './screens/RecoverCodeDialog';
 import {PlayerCodeDialog} from './screens/PlayerCodeDialog';
 import {MenuScreen} from './screens/MenuScreen';
 import {TowerSelectScreen} from './screens/TowerSelectScreen';
@@ -33,11 +34,36 @@ function App() {
     const showHUD = GAME_SCREENS.has(state.currentScreen);
     const [newPlayerError, setNewPlayerError] = useState<string>('');
 
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [preloadError, setPreloadError] = useState<string | null>(null);
+
     const handleAddTimeUsed = useCallback(() => {
-        // Vizuální feedback je řešen v CombatScreen přes toast
     }, []);
 
-    // Když hráč dosáhne VICTORY, oznámenímu backendu
+    useEffect(() => {
+        let isMounted = true;
+
+        async function initGame() {
+            try {
+                await preloadGameImages();
+                if (isMounted) {
+                    setIsLoaded(true);
+                }
+            } catch (err) {
+                console.error('Image preloader failed:', err);
+                if (isMounted) {
+                    setPreloadError('Nepodařilo se načíst herní data. Zkuste prosím obnovit stránku.');
+                }
+            }
+        }
+
+        initGame();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
     useEffect(() => {
         if (state.currentScreen === Screen.VICTORY && state.runId) {
             apiClient.runs.finishRun(state.runId).catch(err => {
@@ -60,12 +86,34 @@ function App() {
         }
     };
 
+    if (preloadError) {
+        return (
+            <div
+                className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2 text-red-500 font-bold text-center">
+                <div className="bg-white p-6 rounded-lg border-2 border-red-500 shadow-lg">
+                    <p>{preloadError}</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isLoaded) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2">
+                <div className="text-center font-mono">
+                    <h2 className="text-2xl font-bold mb-6 text-(--ink)">Načítání hry...</h2>
+                    <div
+                        className="w-12 h-12 border-4 border-(--ink) border-t-transparent rounded-full animate-spin mx-auto"></div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex items-center justify-center min-h-screen bg-(--paper-dark) p-2">
             <div
                 className="graph-paper w-full max-w-6xl h-[92vh] max-h-200 flex flex-col overflow-hidden relative border-2 border-(--ink) shadow-[6px_6px_0_var(--ink)] rounded-[4px_8px_6px_5px/6px_4px_8px_5px]"
             >
-                {/* HUD — pouze při herních stavech */}
                 {showHUD && state.selectedTower && (
                     <HUD
                         tower={state.selectedTower}
@@ -73,6 +121,7 @@ function App() {
                         room={state.room}
                         playerHp={state.playerHp}
                         playerMaxHp={state.playerMaxHp}
+                        onSurrender={() => dispatch({type: 'TO_GAMEOVER'})}
                     />
                 )}
 
@@ -95,6 +144,17 @@ function App() {
 
                     {state.currentScreen === Screen.NEW_PLAYER && (
                         <NewPlayerScreen
+                            onCheckName={async (name: string) => {
+                                try {
+                                    await apiClient.players.getStats(name);
+                                    setNewPlayerError('Tohle jméno už někdo má. Zkus si vymyslet jiné!');
+                                    return false;
+                                } catch (err) {
+                                    console.log('[Ověření jména] Očekávaná chyba - jméno je volné:', err);
+                                    setNewPlayerError('');
+                                    return true;
+                                }
+                            }}
                             onSubmit={handleCreateNewPlayer}
                             onBack={() => {
                                 setNewPlayerError('');
@@ -135,10 +195,13 @@ function App() {
                         />
                     )}
 
-                    {state.currentScreen === Screen.INTRO && state.selectedTower && (
+                    {state.currentScreen === Screen.INTRO && state.selectedTower && state.playerName && (
                         <IntroScreen
                             tower={state.selectedTower}
-                            onContinue={() => actions.startRun()}
+                            playerName={state.playerName}
+                            onContinue={() => {
+                                actions.startRun();
+                            }}
                         />
                     )}
 
@@ -146,7 +209,6 @@ function App() {
                         <SettingsScreen
                             settings={state.settings}
                             onChange={settings => dispatch({type: 'UPDATE_SETTINGS', settings})}
-                            // OPRAVENO: Odstraněn onResetSessionStats
                             onBack={() => dispatch({type: 'TO_MENU'})}
                         />
                     )}
@@ -160,10 +222,10 @@ function App() {
 
                     {state.currentScreen === Screen.EMPTY_ROOM && (
                         <EmptyRoomScreen
-                            rewardItem={state.rewardItem} // <--- PŘIDAT TOTO
+                            rewardItem={state.rewardItem}
                             onRest={() => dispatch({type: 'CAMP_REST'})}
                             onScavenge={() => dispatch({type: 'CAMP_SCAVENGE'})}
-                            onTakeReward={() => dispatch({type: 'TAKE_REWARD'})} // <--- A TOTO
+                            onTakeReward={() => dispatch({type: 'TAKE_REWARD'})}
                         />
                     )}
 
@@ -181,7 +243,6 @@ function App() {
                             inventory={state.inventory}
                             peekNextRoom={state.peekNextRoom}
                             roundTimeSeconds={state.settings.roundTimeSeconds}
-                            reducedMotion={state.settings.reducedMotion}
                             showWrongAnswerDialog={!!state.wrongAnswerDialog}
                             onAnswer={(ans, correct) => {
                                 actions.answer(ans ?? '', correct);
@@ -231,7 +292,6 @@ function App() {
                 </div>
             </div>
 
-            {/* Ošetřeno pro nové rozhraní GameState / Problem */}
             {state.wrongAnswerDialog && (
                 <WrongAnswerDialog
                     prompt={state.wrongAnswerDialog.prompt}

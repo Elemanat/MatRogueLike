@@ -19,10 +19,13 @@ export const ExistingPlayerLoginScreen: React.FC<Props> = ({onSubmit, onBack, on
 
     return (
         <div className="flex flex-col items-center justify-center h-full gap-8 px-6">
-            <h1 className="text-5xl font-bold" style={{color: 'var(--ink)'}}>VěžMat</h1>
-            <p className="text-lg text-center" style={{color: 'var(--ink-light)'}}>
-                Zadej svůj kód pro přihlášení
-            </p>
+            <img
+                src="/assets/title.png"
+                alt="VěžMat"
+                className="w-3/4 md:w-1/2 h-auto object-contain drop-shadow-lg"
+            />            <p className="text-lg text-center" style={{color: 'var(--ink-light)'}}>
+            Zadej svůj kód pro přihlášení
+        </p>
 
             <div className="w-full flex flex-col gap-3">
                 <input
@@ -44,24 +47,41 @@ export const ExistingPlayerLoginScreen: React.FC<Props> = ({onSubmit, onBack, on
 
             {error && (
                 <p className="text-lg" style={{color: 'var(--danger)', textAlign: 'center'}}>
-                    ❌ {error}
+                    <div className="flex items-center gap-2">
+                        <img
+                            src={'/assets/icons/cross_icon.png'}
+                            alt={'Špatná odpověď'}
+                            className="h-8 w-8 object-contain"
+                        />
+                        <span>{error}</span>
+                    </div>
                 </p>
             )}
 
             <div className="flex gap-3 w-full">
                 <button
-                    className="sketch-btn text-lg py-2 flex-1"
+                    className="sketch-btn sketch-btn-danger text-xl py-2 flex-1 flex items-center justify-center gap-3"
                     onClick={onBack}
                     disabled={isLoading}
                 >
-                    ← Zpět
+                    <img
+                        src="/assets/icons/door_icon.png"
+                        alt="Logout"
+                        className="h-8 w-8 object-contain"
+                    />
+                    Zpět
                 </button>
                 <button
-                    className="sketch-btn sketch-btn-primary text-lg py-2 flex-1 disabled:opacity-40 transition-opacity"
+                    className="sketch-btn sketch-btn-primary text-xl py-2 flex-1 flex items-center justify-center gap-3 disabled:opacity-40 transition-opacity"
                     disabled={!code.trim() || isLoading}
                     onClick={handleSubmit}
                 >
-                    Přihlásit →
+                    <img
+                        src="/assets/icons/gate_icon.png"
+                        alt="Vstup"
+                        className="h-8 w-8 object-contain"
+                    />
+                    Přihlásit
                 </button>
             </div>
 

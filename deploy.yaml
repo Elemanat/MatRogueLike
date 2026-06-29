@@ -56,9 +56,8 @@ spec:
     spec:
       containers:
         - name: backend
-          image: petrkonir/matrogulike-backend:v4
+          image: petrkonir/matrogulike-backend:v7
           env:
-            # Tady propojujeme backend na vnitřní K8s službu databáze místo localhostu
             - name: DATABASE_URL
               value: "postgresql://postgres:postgres@matrogulike-postgres-service:5432/matrogulike"
             - name: PORT

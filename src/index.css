@@ -1,139 +1,386 @@
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --paper: #f5f0e8;
-  --paper-dark: #ede8da;
-  --ink: #2c2c3e;
-  --ink-light: #4a4a6a;
-  --grid: #b8c4d0;
-  --grid-size: 1.375rem;
-  --red: #c0392b;
-  --green: #27ae60;
-  --gold: #d4a017;
-  font-family: 'Caveat', cursive;
-  line-height: 1.5;
-  /* Responsivní font-size — škáluje se podle viewportu */
-  font-size: clamp(14px, 1.5vw, 22px);
+    --paper: #f5f0e8;
+    --paper-dark: #ede8da;
+    --ink: #2c2c3e;
+    --ink-light: #4a4a6a;
+    --grid: #b8c4d0;
+    --grid-size: 1.375rem;
+    --red: #c0392b;
+    --green: #27ae60;
+    --gold: #d4a017;
+    --tower-cold: #7dd3fc;
+    --tower-warm: #fbbf24;
+    font-family: 'Caveat', cursive;
+    line-height: 1.5;
+    font-size: clamp(14px, 1.5vw, 22px);
 }
 
 html, body, #root {
-  height: 100%;
-  margin: 0;
+    height: 100%;
+    margin: 0;
 }
 
 body {
-  background-color: var(--paper-dark);
-  overflow: hidden;
+    background-color: var(--paper-dark);
+    overflow: hidden;
 }
 
 /* Globální responzivita obrázků */
 img {
-  max-width: 100%;
-  height: auto;
+    max-width: 100%;
+    height: auto;
 }
 
 /* ── Herní pozadí a kreslené boxy ────────────────────────────────────────── */
 
 .graph-paper {
-  background-color: var(--paper);
-  background-image:
-          linear-gradient(var(--grid) 1px, transparent 1px),
-          linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: var(--grid-size) var(--grid-size);
+    background-color: var(--paper);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, transparent calc(var(--grid-size) - 1px), #d4a01730 calc(var(--grid-size) - 1px));
+    background-size: var(--grid-size) var(--grid-size);
+    background-position: 0 0;
+    position: relative;
+}
+
+.graph-paper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(212, 160, 23, 0.03) 50%,
+    transparent 100%);
+    pointer-events: none;
 }
 
 .sketch-box {
-  border: 0.125rem solid var(--ink);
-  border-radius: 0.2rem 0.375rem 0.25rem 0.3rem / 0.3rem 0.2rem 0.375rem 0.25rem;
-  box-shadow: 0.2rem 0.2rem 0 var(--ink);
-  background-color: var(--paper);
+    border: 0.125rem solid var(--ink);
+    border-radius: 0.2rem 0.375rem 0.25rem 0.3rem / 0.3rem 0.2rem 0.375rem 0.25rem;
+    box-shadow: 0.2rem 0.2rem 0 var(--ink);
+    background-color: var(--paper);
 }
 
 .sketch-box-light {
-  border: 0.1rem solid var(--ink-light);
-  border-radius: 0.2rem 0.375rem 0.25rem 0.3rem / 0.3rem 0.2rem 0.375rem 0.25rem;
-  box-shadow: 0.125rem 0.125rem 0 var(--ink-light);
-  background-color: var(--paper);
+    border: 0.1rem solid var(--ink-light);
+    border-radius: 0.2rem 0.375rem 0.25rem 0.3rem / 0.3rem 0.2rem 0.375rem 0.25rem;
+    box-shadow: 0.125rem 0.125rem 0 var(--ink-light);
+    background-color: var(--paper);
 }
 
 /* ── Tlačítka ────────────────────────────────────────────────────────────── */
 
 .sketch-btn {
-  font-family: 'Caveat', cursive;
-  font-size: 1.1rem;
-  font-weight: 600;
-  border: 0.125rem solid var(--ink);
-  border-radius: 0.2rem 0.44rem 0.3rem 0.375rem / 0.375rem 0.25rem 0.44rem 0.2rem;
-  box-shadow: 0.2rem 0.2rem 0 var(--ink);
-  background-color: var(--paper);
-  color: var(--ink);
-  cursor: pointer;
-  padding: 0.4rem 1rem;
-  transition: transform 0.08s, box-shadow 0.08s;
-  user-select: none;
+    font-family: 'Caveat', cursive;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: 0.125rem solid var(--ink);
+    border-bottom: 0.25rem solid var(--ink);
+    border-radius: 0.2rem 0.44rem 0.3rem 0.375rem / 0.375rem 0.25rem 0.44rem 0.2rem;
+    box-shadow: 0.2rem 0.2rem 0 var(--ink);
+    background-color: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+    padding: 0.4rem 1rem;
+    transition: transform 0.08s, box-shadow 0.08s, border-bottom-width 0.08s;
+    user-select: none;
 }
-.sketch-btn:hover  { transform: translate(-0.065rem, -0.065rem); box-shadow: 0.25rem 0.25rem 0 var(--ink); }
-.sketch-btn:active { transform: translate(0.125rem, 0.125rem);   box-shadow: 0.065rem 0.065rem 0 var(--ink); }
 
-.sketch-btn-primary { background-color: var(--ink); color: var(--paper); }
+.sketch-btn:hover {
+    transform: translate(-0.065rem, -0.065rem);
+    box-shadow: 0.25rem 0.25rem 0 var(--ink);
+    border-bottom-width: 0.3rem;
+}
 
-.sketch-btn-danger { border-color: var(--red); box-shadow: 0.2rem 0.2rem 0 var(--red); color: var(--red); }
-.sketch-btn-danger:hover { box-shadow: 0.25rem 0.25rem 0 var(--red); }
+.sketch-btn:active {
+    transform: translate(0.125rem, 0.125rem);
+    box-shadow: 0.065rem 0.065rem 0 var(--ink);
+    border-bottom-width: 0.1rem;
+}
 
-h1, h2, h3 { font-family: 'Caveat', cursive; color: var(--ink); }
+.sketch-btn-primary {
+    background-color: var(--ink);
+    color: var(--paper);
+}
+
+.sketch-btn-danger {
+    border-color: var(--red);
+    box-shadow: 0.2rem 0.2rem 0 var(--red);
+    color: var(--red);
+}
+
+.sketch-btn-danger:hover {
+    box-shadow: 0.25rem 0.25rem 0 var(--red);
+    border-bottom-width: 0.3rem;
+}
+
+.sketch-btn-danger:active {
+    border-bottom-width: 0.1rem;
+}
+
+h1, h2, h3 {
+    font-family: 'Caveat', cursive;
+    color: var(--ink);
+}
+
+/* RPG nadpisy s text stroke efektem */
+.rpg-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    -webkit-text-stroke: 1.2px var(--ink);
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.2),
+    -1px -1px 0 rgba(255, 255, 255, 0.3);
+    color: var(--paper);
+    letter-spacing: 2px;
+}
+
+/* Matematika - monospace font pro čitelnost */
+.math-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 1.1em;
+    letter-spacing: 0.05em;
+}
+
+.math-block {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    background: rgba(212, 160, 23, 0.08);
+    padding: 0.25em 0.5em;
+    border-radius: 0.25rem;
+}
 
 /* ── HUD a časomíra ──────────────────────────────────────────────────────── */
 
-.hp-bar-track { border: 0.125rem solid var(--ink); border-radius: 0.2rem; background: var(--paper); overflow: hidden; }
-.hp-bar-fill  { height: 100%; background: var(--red); transition: width 0.3s; }
+.hp-bar-track {
+    border: 0.125rem solid var(--ink);
+    border-radius: 0.2rem;
+    background: var(--paper);
+    overflow: hidden;
+}
 
-.time-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
-.time-text { color: var(--ink); font-size: 1.1rem; font-weight: 700; }
-.time-hint { color: var(--ink-light); font-size: 0.9rem; }
-.time-track { border: 2px solid var(--ink); border-radius: 999px; background: var(--paper-dark); height: 12px; overflow: hidden; }
-.time-fill { height: 100%; background: var(--green); transition: width 0.2s linear, background-color 0.2s ease; }
+.hp-bar-fill {
+    height: 100%;
+    background: var(--red);
+    transition: width 0.3s;
+}
 
-.time-fill-danger { background: var(--red); animation: pulseDanger 0.7s ease-in-out infinite; }
-.time-fill-danger-static { background: var(--red); }
-.time-text-danger { color: var(--red); }
+.time-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.time-text {
+    color: var(--ink);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.time-hint {
+    color: var(--ink-light);
+    font-size: 0.9rem;
+}
+
+.time-track {
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--paper-dark);
+    height: 12px;
+    overflow: hidden;
+}
+
+.time-fill {
+    height: 100%;
+    background: var(--green);
+    transition: width 0.2s linear, background-color 0.2s ease;
+}
+
+.time-fill-green {
+    background: var(--green);
+}
+
+.time-fill-orange {
+    background: #f39c12;
+}
+
+.time-fill-red {
+    background: var(--red);
+}
+
+.time-fill-danger {
+    background: var(--red);
+    animation: pulseDanger 0.7s ease-in-out infinite;
+}
+
+.time-fill-danger-static {
+    background: var(--red);
+}
+
+.time-fill-warning {
+    animation: timeWarning 0.7s ease-in-out infinite;
+}
+
+.time-text-danger {
+    color: var(--red);
+}
 
 /* ── Speciální tvary ─────────────────────────────────────────────────────── */
 
 .wizard-bubble {
-  position: relative;
-  border: 0.125rem solid var(--ink);
-  border-radius: 0.5rem 0.75rem 0.75rem 0.25rem / 0.375rem 0.625rem 0.875rem 0.5rem;
-  box-shadow: 0.2rem 0.2rem 0 var(--ink);
-  background: var(--paper);
-  padding: 0.75rem 1rem;
+    position: relative;
+    border: 0.125rem solid var(--ink);
+    border-radius: 0.5rem 0.75rem 0.75rem 0.25rem / 0.375rem 0.625rem 0.875rem 0.5rem;
+    box-shadow: 0.2rem 0.2rem 0 var(--ink);
+    background: var(--paper);
+    padding: 0.75rem 1rem;
 }
+
 .wizard-bubble::before {
-  content: '';
-  position: absolute;
-  bottom: -0.875rem; left: 1.25rem;
-  border-left: 0.625rem solid transparent;
-  border-right: 0.375rem solid transparent;
-  border-top: 0.875rem solid var(--ink);
+    content: '';
+    position: absolute;
+    bottom: -0.875rem;
+    left: 1.25rem;
+    border-left: 0.625rem solid transparent;
+    border-right: 0.375rem solid transparent;
+    border-top: 0.875rem solid var(--ink);
 }
+
 .wizard-bubble::after {
-  content: '';
-  position: absolute;
-  bottom: -0.69rem; left: 1.375rem;
-  border-left: 0.5rem solid transparent;
-  border-right: 0.3rem solid transparent;
-  border-top: 0.75rem solid var(--paper);
+    content: '';
+    position: absolute;
+    bottom: -0.69rem;
+    left: 1.375rem;
+    border-left: 0.5rem solid transparent;
+    border-right: 0.3rem solid transparent;
+    border-top: 0.75rem solid var(--paper);
 }
 
 /* ── Animace ─────────────────────────────────────────────────────────────── */
 
 @keyframes slideDown {
-  from { transform: translateY(-1.25rem); opacity: 0; }
-  to   { transform: translateY(0);        opacity: 1; }
+    from {
+        transform: translateY(-1.25rem);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
-.toast-slide { animation: slideDown 0.25s ease-out; }
+
+.toast-slide {
+    animation: slideDown 0.25s ease-out;
+}
 
 @keyframes pulseDanger {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.65; }
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.65;
+    }
+}
+
+@keyframes glowPulse {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(192, 57, 43, 0.8);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(192, 57, 43, 1);
+    }
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-2px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(2px);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes bounceSmooth {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+@keyframes timeWarning {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* ── CSS Utility třídy pro animace ───────────────────────────────────────── */
+
+.shake {
+    animation: shake 0.5s ease-in-out 1;
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+.slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+}
+
+.bounce-smooth {
+    animation: bounceSmooth 2s ease-in-out infinite;
+}
+
+.glow-pulse {
+    animation: glowPulse 1.5s ease-in-out infinite;
+}
+
+.time-warning {
+    animation: timeWarning 0.7s ease-in-out infinite;
+}
+
+/* ── MiniMap Glow efekty ─────────────────────────────────────────────────── */
+
+.minimap-current-room {
+    box-shadow: 0 0 10px rgba(192, 57, 43, 0.8);
+}
+
+.minimap-current-room-glow {
+    animation: glowPulse 1.5s ease-in-out infinite;
 }
